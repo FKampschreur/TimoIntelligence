@@ -89,7 +89,7 @@ const defaultContent: ContentState = {
       description: 'Geavanceerd vlootbeheer gericht op maximale kostenreductie en CO2-besparing. Optimaliseer routes en reduceer brandstofverbruik in real-time.',
       detailTitle: 'Strategisch Vlootbeheer',
       detailText: 'Timo Fleet is uw strategische partner voor modern transportmanagement. Gedreven door AI, gaat dit platform verder dan simpele routeplanning. Wij bieden realtime vlootbeheer, dynamische chauffeursroosters en intelligente kostenreductie.\n\nHet systeem maakt autonome afwegingen op basis van uw bedrijfsdata: is een tijdvenster-boete voordeliger dan een extra voertuig inzetten? Prioriteren we elektrisch rijden voor duurzaamheid? Timo Fleet navigeert niet alleen uw wagens, maar ook uw bedrijfsstrategie.',
-      image: 'https://picsum.photos/id/193/600/400',
+      image: 'https://i.imgur.com/6ULyMKV.jpg',
       iconName: 'Truck'
     },
     {
@@ -99,7 +99,7 @@ const defaultContent: ContentState = {
       description: 'AI-ondersteuning voor het analyseren en winnen van aanbestedingen. Beheer contractvereisten en genereer winnende voorstellen.',
       detailTitle: 'Slimmer Inschrijven',
       detailText: 'Analyseer razendsnel bestekdocumenten en genereer conceptantwoorden op basis van uw historische successen.',
-      image: 'https://picsum.photos/id/445/600/400',
+      image: 'https://i.imgur.com/BHQtcIb.jpg',
       iconName: 'FileText'
     },
     {
@@ -109,7 +109,7 @@ const defaultContent: ContentState = {
       description: 'Real-time dashboarding voor grip op inkoop, voorraad en operationele processen. Van ruwe data naar strategische beslissingen.',
       detailTitle: 'Data Driven Decisions',
       detailText: 'Koppel al uw databronnen en visualiseer uw KPI\'s in real-time. Van voorraadbeheer tot financiële prognoses.',
-      image: 'https://picsum.photos/id/4/600/400',
+      image: 'https://i.imgur.com/j4wMdCZ.jpg',
       iconName: 'BarChart3'
     },
     {
@@ -119,7 +119,7 @@ const defaultContent: ContentState = {
       description: 'De centrale hub voor uw personeel. Roosterinzage, communicatie en taakbeheer voor maximale tevredenheid en efficiëntie.',
       detailTitle: 'Employee Engagement',
       detailText: 'Verhoog de betrokkenheid van uw medewerkers met een moderne app voor nieuws, roosters en verlofaanvragen.',
-      image: 'https://picsum.photos/id/60/600/400',
+      image: 'https://i.imgur.com/BYfL1zs.jpg',
       iconName: 'Users'
     },
     {
@@ -129,7 +129,7 @@ const defaultContent: ContentState = {
       description: 'Automatische verwerking en optimalisatie van productafbeeldingen voor webshops en catalogi. Consistentie en kwaliteit gegarandeerd.',
       detailTitle: 'Automated Imaging',
       detailText: 'Laat AI uw productfotografie optimaliseren, vrijstaand maken en categoriseren voor e-commerce gebruik.',
-      image: 'https://picsum.photos/id/250/600/400',
+      image: 'https://i.imgur.com/tO0TYrR.jpg',
       iconName: 'ImageIcon'
     },
   ],
@@ -159,12 +159,12 @@ const defaultContent: ContentState = {
   contact: {
     title: 'Neem Contact Op',
     introText: 'Klaar om uw organisatie te optimaliseren met Timo Intelligence? Wij komen graag langs voor een demo of een gesprek over de mogelijkheden.',
-    addressStreet: 'Nieuwe Aamsestraat 42',
-    addressPostalCode: '6662 NK Elst (Gld)',
+    addressStreet: 'Bijsterhuizen 2513',
+    addressPostalCode: '6604 LM Wijchen (Gld)',
     addressCity: '',
     addressNote: '(Gevestigd bij Holland Food Service)',
     email: 'info@timointelligence.nl',
-    phone: '+31 (0)481 37 45 45',
+    phone: '',
     formTitle: 'Stuur ons een bericht',
     buttonText: 'Verstuur Bericht'
   }

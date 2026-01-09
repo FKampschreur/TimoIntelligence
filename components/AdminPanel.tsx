@@ -16,6 +16,15 @@ const AdminPanel: React.FC = () => {
   const { content, saveStatus, updateHero, updateSolution, addSolution, removeSolution, selectIconFromText, updateAbout, updatePartners, updateContact, forceSave } = useContent();
   const [showSaveMessage, setShowSaveMessage] = useState(false);
 
+  // Check if content contains base64 images
+  const hasBase64Images = () => {
+    // Check solutions images
+    const hasSolutionImages = content.solutions.some(s => s.image && s.image.startsWith('data:image'));
+    // Check about image
+    const hasAboutImage = content.about.imageUrl && content.about.imageUrl.startsWith('data:image');
+    return hasSolutionImages || hasAboutImage;
+  };
+
   const handleManualSave = async () => {
     await forceSave();
     setShowSaveMessage(true);
@@ -38,15 +47,6 @@ const AdminPanel: React.FC = () => {
 
   return (
     <>
-      {/* Floating Trigger Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 p-4 bg-timo-accent text-black rounded-full shadow-[0_0_20px_rgba(6,182,212,0.5)] hover:bg-white transition-all duration-300 group"
-        aria-label="Open Settings"
-      >
-        <Settings className="w-6 h-6 group-hover:rotate-90 transition-transform duration-500" />
-      </button>
-
       {/* Slide-over Panel */}
       <AnimatePresence>
         {isOpen && (
@@ -167,6 +167,13 @@ const AdminPanel: React.FC = () => {
                     
                     {/* Storage Info */}
                     <div className="text-center">
+                      {hasBase64Images() && (
+                        <div className="mb-2 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded">
+                          <p className="text-xs text-yellow-400">
+                            ⚠️ Er zijn afbeeldingen die lokaal worden opgeslagen. Gebruik externe URL's voor productie.
+                          </p>
+                        </div>
+                      )}
                       <p className="text-xs text-gray-500">
                         {isApiAvailable() 
                           ? 'Wijzigingen worden opgeslagen op de server'

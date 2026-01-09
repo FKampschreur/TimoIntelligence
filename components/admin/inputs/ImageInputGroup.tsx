@@ -7,6 +7,7 @@ import React, { useState, useRef } from 'react';
 import { Upload, Link as LinkIcon } from 'lucide-react';
 import { FILE_CONSTANTS } from '../../../utils/constants';
 import { useImageErrorHandler } from '../../../hooks/useImageErrorHandler';
+import { isApiAvailable } from '../../../utils/apiConfig';
 
 export interface ImageInputGroupProps {
   label: string;
@@ -24,6 +25,9 @@ export const ImageInputGroup: React.FC<ImageInputGroupProps> = ({ label, value, 
   React.useEffect(() => {
     if (isDataUrl) {
       setInputMode('upload');
+    } else if (!isApiAvailable()) {
+      // Force URL mode when no API is available
+      setInputMode('url');
     }
   }, [isDataUrl]);
 
@@ -39,6 +43,35 @@ export const ImageInputGroup: React.FC<ImageInputGroupProps> = ({ label, value, 
       // Validate file size
       if (file.size > FILE_CONSTANTS.MAX_FILE_SIZE_BYTES) {
         alert(`Bestand is te groot. Maximum grootte is ${FILE_CONSTANTS.MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB.`);
+        return;
+      }
+
+      // Waarschuwing: base64 afbeeldingen worden lokaal opgeslagen
+      // Check if API is available
+      if (!isApiAvailable()) {
+        alert(
+          '⚠️ Upload is niet beschikbaar zonder backend API.\n\n' +
+          'Gebruik een externe image hosting service (zoals Imgur, Cloudinary, of je eigen server) en voer de URL in.'
+        );
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        setInputMode('url');
+        return;
+      }
+
+      // With API available, we could upload to server
+      // For now, show warning that base64 will be stored
+      const confirmUpload = window.confirm(
+        '⚠️ WAARSCHUWING: Geüploade afbeeldingen worden momenteel als base64 opgeslagen.\n\n' +
+        'Voor productie wordt aangeraden om afbeeldingen te hosten op een externe server en de URL te gebruiken.\n\n' +
+        'Wil je doorgaan met het uploaden?'
+      );
+
+      if (!confirmUpload) {
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
         return;
       }
 
@@ -86,18 +119,32 @@ export const ImageInputGroup: React.FC<ImageInputGroupProps> = ({ label, value, 
           <LinkIcon className="w-3 h-3" />
           URL
         </button>
-        <button
-          type="button"
-          onClick={() => setInputMode('upload')}
-          className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded text-xs font-medium transition-colors ${
-            inputMode === 'upload' 
-              ? 'bg-timo-accent text-black' 
-              : 'bg-black/50 text-gray-400 hover:text-white border border-white/10'
-          }`}
-        >
-          <Upload className="w-3 h-3" />
-          Upload
-        </button>
+        {!isApiAvailable() && (
+          <button
+            type="button"
+            onClick={() => setInputMode('upload')}
+            disabled
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded text-xs font-medium transition-colors bg-black/50 text-gray-500 border border-white/10 cursor-not-allowed opacity-50"
+            title="Upload alleen beschikbaar met backend API"
+          >
+            <Upload className="w-3 h-3" />
+            Upload (niet beschikbaar)
+          </button>
+        )}
+        {isApiAvailable() && (
+          <button
+            type="button"
+            onClick={() => setInputMode('upload')}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded text-xs font-medium transition-colors ${
+              inputMode === 'upload' 
+                ? 'bg-timo-accent text-black' 
+                : 'bg-black/50 text-gray-400 hover:text-white border border-white/10'
+            }`}
+          >
+            <Upload className="w-3 h-3" />
+            Upload
+          </button>
+        )}
       </div>
 
       {/* URL Input */}
@@ -111,14 +158,30 @@ export const ImageInputGroup: React.FC<ImageInputGroupProps> = ({ label, value, 
             className="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-timo-accent focus:outline-none transition-colors"
           />
           {isDataUrl && (
-            <p className="text-xs text-gray-500">Er is momenteel een geüploade afbeelding. Schakel naar "Upload" om deze te zien of te verwijderen.</p>
+            <div className="p-2 bg-yellow-500/10 border border-yellow-500/30 rounded">
+              <p className="text-xs text-yellow-400">
+                ⚠️ Er is momenteel een lokaal opgeslagen afbeelding. Schakel naar "Upload" om deze te zien of te verwijderen.
+              </p>
+            </div>
           )}
         </div>
       )}
 
       {/* File Upload */}
-      {inputMode === 'upload' && (
+      {inputMode === 'upload' && !isApiAvailable() && (
+        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+          <p className="text-xs text-red-400">
+            ❌ Upload is niet beschikbaar zonder backend API. Configureer een backend API of gebruik een externe image hosting service en voer de URL in.
+          </p>
+        </div>
+      )}
+      {inputMode === 'upload' && isApiAvailable() && (
         <div className="space-y-2">
+          <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg mb-2">
+            <p className="text-xs text-blue-400">
+              ℹ️ Geüploade afbeeldingen worden naar de server geüpload via de backend API.
+            </p>
+          </div>
           <input
             ref={fileInputRef}
             type="file"
@@ -140,7 +203,7 @@ export const ImageInputGroup: React.FC<ImageInputGroupProps> = ({ label, value, 
           {isDataUrl && (
             <div className="mt-2">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-gray-400">Geüploade afbeelding:</span>
+                <span className="text-xs text-gray-400">Geüploade afbeelding (lokaal opgeslagen):</span>
                 <button
                   type="button"
                   onClick={handleRemoveUpload}

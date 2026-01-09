@@ -3,6 +3,8 @@ import { MapPin, Mail, Phone, Send } from 'lucide-react';
 import { useContent } from '../context/ContentContext';
 import { sanitizeInput, validateEmail, validateLength, RateLimiter } from '../utils/security';
 import { VALIDATION_CONSTANTS } from '../utils/constants';
+import { sendContactForm } from '../utils/apiService';
+import { isApiAvailable } from '../utils/apiConfig';
 
 const Contact: React.FC = () => {
   const { content } = useContent();
@@ -88,13 +90,50 @@ const Contact: React.FC = () => {
         console.log('Form submitted (dev only):', { firstName: firstName.substring(0, 1) + '***', lastName: lastName.substring(0, 1) + '***', email: email.substring(0, 3) + '***' });
       }
       
-      // TODO: Send form data to backend API endpoint instead of just logging
-      // This should be implemented with proper server-side validation and rate limiting
+      // Probeer eerst via API te versturen (als beschikbaar)
+      if (isApiAvailable()) {
+        const response = await sendContactForm({
+          firstName,
+          lastName,
+          email,
+          message
+        });
+        
+        if (response.success) {
+          alert('Bedankt voor uw bericht! We nemen zo spoedig mogelijk contact met u op.');
+          e.currentTarget.reset();
+          setRateLimitError(null);
+          setIsSubmitting(false);
+          return;
+        } else {
+          // API failed, fallback to mailto
+          console.warn('API send failed, falling back to mailto:', response.error);
+        }
+      }
       
-      alert('Bedankt voor uw bericht! We nemen zo spoedig mogelijk contact met u op.');
+      // Fallback: Verstuur email via mailto link
+      const recipientEmail = 'f.kampschreur@hollandfoodservice.nl';
+      const subject = encodeURIComponent(`Contactformulier: ${firstName} ${lastName}`);
+      const body = encodeURIComponent(
+        `Beste,\n\n` +
+        `Er is een nieuw bericht ontvangen via het contactformulier:\n\n` +
+        `Naam: ${firstName} ${lastName}\n` +
+        `Email: ${email}\n\n` +
+        `Bericht:\n${message}\n\n` +
+        `---\n` +
+        `Dit bericht is automatisch gegenereerd vanuit het contactformulier op de website.`
+      );
+      
+      // Open email client met mailto link
+      const mailtoLink = `mailto:${recipientEmail}?subject=${subject}&body=${body}`;
+      window.location.href = mailtoLink;
+      
       // Reset form
       e.currentTarget.reset();
       setRateLimitError(null);
+      
+      // Toon bevestiging
+      alert('Bedankt voor uw bericht! Uw email client wordt geopend om het bericht te versturen.');
     } catch (error) {
       // Log error without exposing user data
       console.error('Error submitting form:', error instanceof Error ? error.message : 'Unknown error');
@@ -141,15 +180,17 @@ const Contact: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-timo-card rounded-lg border border-white/10">
-                    <Phone className="w-6 h-6 text-timo-accent" />
+              {contact.phone && (
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-timo-card rounded-lg border border-white/10">
+                      <Phone className="w-6 h-6 text-timo-accent" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-bold mb-1">Telefoon</h3>
+                    <p className="text-gray-400">{contact.phone}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-white font-bold mb-1">Telefoon</h3>
-                  <p className="text-gray-400">{contact.phone || 'Niet opgegeven'}</p>
-                </div>
-              </div>
+              )}
             </div>
           </div>
 

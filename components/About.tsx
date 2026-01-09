@@ -50,7 +50,7 @@ const About: React.FC = () => {
             <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
                {/* Using a placeholder for the team/warehouse shot. */}
               <img 
-                src="https://picsum.photos/id/3/800/1000" 
+                src="https://i.imgur.com/Z0olMf2.jpg" 
                 alt="Management en Development Team" 
                 className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
               />

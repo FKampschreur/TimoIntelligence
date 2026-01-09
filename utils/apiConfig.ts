@@ -12,6 +12,7 @@ export const API_CONFIG = {
   // Endpoints
   ENDPOINTS: {
     CONTENT: '/content',
+    CONTACT: '/contact',
   },
   
   // Timeout voor API requests (milliseconden)

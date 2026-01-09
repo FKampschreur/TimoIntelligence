@@ -127,6 +127,50 @@ export const saveContent = async (
 };
 
 /**
+ * Verstuur contactformulier naar API
+ */
+export const sendContactForm = async (
+  formData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    message: string;
+  }
+): Promise<ApiResponse<void>> => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
+
+    const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CONTACT}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      return { success: false, error: 'Request timeout - server reageert niet' };
+    }
+    console.error('Error sending contact form:', error);
+    return { 
+      success: false, 
+      error: error.message || 'Fout bij verzenden van contactformulier' 
+    };
+  }
+};
+
+/**
  * Check of de API bereikbaar is
  */
 export const checkApiHealth = async (): Promise<boolean> => {
