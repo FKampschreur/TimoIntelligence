@@ -3,7 +3,7 @@
  * Extracted from AdminPanel for better separation of concerns
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, Lock } from 'lucide-react';
 import { UseAdminAuthReturn } from '../../hooks/useAdminAuth';
 import { ADMIN_CONSTANTS } from '../../utils/constants';
@@ -24,6 +24,12 @@ export const AdminAuth: React.FC<AdminAuthProps> = ({
   handleLogin,
   onClose,
 }) => {
+  // Reset velden wanneer het formulier wordt geopend
+  useEffect(() => {
+    setUsername('');
+    setPassword('');
+  }, [setUsername, setPassword]);
+
   return (
     <>
       {/* Header */}
@@ -52,10 +58,11 @@ export const AdminAuth: React.FC<AdminAuthProps> = ({
               type="email"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="f.kampschreur@hollandfoodservice.nl"
+              placeholder="Gebruikersnaam"
               className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:border-timo-accent focus:outline-none focus:ring-1 focus:ring-timo-accent transition-colors"
               required
               autoFocus
+              autoComplete="off"
             />
           </div>
 
