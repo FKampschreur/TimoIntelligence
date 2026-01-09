@@ -15,34 +15,15 @@
    npm install
    ```
 
-3. **Maak admin credentials**
-   
-   Maak een `.env.local` bestand in de root:
-   ```env
-   VITE_ADMIN_USERNAME=admin
-   VITE_ADMIN_PASSWORD_HASH=je_wachtwoord_hash_hier
-   ```
-   
-   **Wachtwoord hash genereren:**
-   ```bash
-   node scripts/generate-password-hash.js jouw_wachtwoord
-   ```
-   
-   Of gebruik online tool: https://emn178.github.io/online-tools/sha256.html
-   - Typ je wachtwoord
-   - Kopieer de SHA-256 hash
-   - Plak in `.env.local`
-
-4. **Start de website**
+3. **Start de website**
    ```bash
    npm run dev
    ```
 
-5. **Open website en log in**
-   - Ga naar http://localhost:5173
+4. **Open website en begin met bewerken**
+   - Ga naar http://localhost:3000 (of de poort die Vite aangeeft)
    - Klik op ⚙️ rechtsonder
-   - Log in met je credentials
-   - Begin met bewerken!
+   - Begin direct met bewerken!
 
 **✅ Klaar!** Wijzigingen worden opgeslagen in je browser.
 
@@ -52,31 +33,7 @@
 
 **Voor live website met persistentie:**
 
-#### Optie 1: Supabase (Aanbevolen - Eenvoudigst)
-
-1. **Maak Supabase account** (gratis)
-   - Ga naar: https://supabase.com
-   - Maak nieuw project
-
-2. **Maak database tabel**
-   - Ga naar SQL Editor
-   - Voer dit uit:
-   ```sql
-   CREATE TABLE content (
-     id TEXT PRIMARY KEY DEFAULT 'main',
-     data JSONB NOT NULL,
-     updated_at TIMESTAMP DEFAULT NOW()
-   );
-   ```
-
-3. **Deploy backend** (zie `API_SETUP.md` voor code)
-
-4. **Configureer frontend**
-   ```env
-   VITE_API_BASE_URL=https://jouw-project.supabase.co/rest/v1
-   ```
-
-#### Optie 2: Firebase (Ook eenvoudig)
+#### Optie 1: Firebase (Aanbevolen - Eenvoudigst)
 
 1. **Maak Firebase account** (gratis)
    - Ga naar: https://firebase.google.com
@@ -111,7 +68,7 @@ A: Nee! Voor development/testen werkt het zonder backend. Voor productie is het 
 **Q: Hoeveel kost het?**
 A: 
 - Zonder backend: Gratis
-- Met Supabase/Firebase: Gratis voor kleine sites
+- Met Firebase: Gratis voor kleine sites
 - Met eigen server: $5-20/maand
 
 **Q: Kan ik meerdere beheerders hebben?**
@@ -128,9 +85,8 @@ A:
 
 - [ ] Node.js geïnstalleerd
 - [ ] `npm install` uitgevoerd
-- [ ] `.env.local` aangemaakt met credentials
 - [ ] `npm run dev` gestart
-- [ ] Ingelogd in admin panel
+- [ ] Admin panel geopend (⚙️ rechtsonder)
 - [ ] Test wijziging gemaakt
 - [ ] (Optioneel) Backend API geconfigureerd
 

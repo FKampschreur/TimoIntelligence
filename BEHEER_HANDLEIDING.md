@@ -19,7 +19,7 @@ Deze handleiding legt uit hoe je de content van je website kunt beheren en wat j
 
 1. **Open je website** in de browser
 2. **Klik op het instellingen-icoon** (⚙️) rechtsonder in beeld
-3. **Log in** met je admin credentials
+3. **Open het admin panel** door op ⚙️ rechtsonder te klikken
 4. **Bewerk content** via de verschillende tabs:
    - Hero (hoofdbanner)
    - Oplossingen (producten/diensten)
@@ -53,7 +53,6 @@ Deze handleiding legt uit hoe je de content van je website kunt beheren en wat j
 
 - ✅ Alleen de website zelf
 - ✅ Een browser
-- ✅ Admin login credentials
 
 **Hoe werkt het:**
 - Content wordt opgeslagen in de **browser localStorage**
@@ -72,7 +71,6 @@ Deze handleiding legt uit hoe je de content van je website kunt beheren en wat j
 - ✅ Website (frontend)
 - ✅ Backend API server
 - ✅ Database of bestandssysteem voor opslag
-- ✅ Admin login credentials
 - ✅ Hosting voor backend (optioneel)
 
 **Hoe werkt het:**
@@ -87,7 +85,7 @@ Deze handleiding legt uit hoe je de content van je website kunt beheren en wat j
 
 ### Optie 1: Serverless (Aanbevolen voor beginners)
 
-**Firebase / Supabase / Vercel**
+**Firebase / Vercel**
 
 **Voordelen:**
 - ✅ Geen server beheer nodig
@@ -96,7 +94,7 @@ Deze handleiding legt uit hoe je de content van je website kunt beheren en wat j
 - ✅ Eenvoudige setup
 
 **Wat je nodig hebt:**
-- Account bij Firebase/Supabase/Vercel
+- Account bij Firebase/Vercel
 - 15-30 minuten setup tijd
 
 **Kosten:** Gratis voor kleine websites (~$0-10/maand voor grotere sites)
@@ -158,52 +156,19 @@ Deze handleiding legt uit hoe je de content van je website kunt beheren en wat j
 
 ## Stap-voor-stap Setup
 
-### Stap 1: Admin Credentials Instellen
-
-Maak een `.env.local` bestand in de root van je project:
-
-```env
-# Admin Login Credentials
-VITE_ADMIN_USERNAME=jouw_gebruikersnaam
-VITE_ADMIN_PASSWORD_HASH=hash_van_je_wachtwoord
-```
-
-**Wachtwoord Hash Genereren:**
-
-Gebruik deze online tool of Node.js script:
-
-```javascript
-// Genereer hash van je wachtwoord
-const crypto = require('crypto');
-const password = 'jouw_wachtwoord';
-const hash = crypto.createHash('sha256').update(password).digest('hex');
-console.log(hash);
-```
-
-Of gebruik deze website: https://emn178.github.io/online-tools/sha256.html
-
-**Voorbeeld:**
-```env
-VITE_ADMIN_USERNAME=admin
-VITE_ADMIN_PASSWORD_HASH=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-```
-
----
-
-### Stap 2A: Setup Zonder Backend (Development)
+### Stap 1: Setup Zonder Backend (Development)
 
 **Alleen voor development/testen:**
 
-1. ✅ Admin credentials instellen (zie Stap 1)
-2. ✅ Start development server: `npm run dev`
-3. ✅ Open website en log in
-4. ✅ Bewerk content - wordt opgeslagen in browser
+1. ✅ Start development server: `npm run dev`
+2. ✅ Open website en klik op ⚙️ rechtsonder
+3. ✅ Bewerk content - wordt opgeslagen in browser
 
 **Klaar!** Geen verdere configuratie nodig.
 
 ---
 
-### Stap 2B: Setup Met Backend (Productie)
+### Stap 2: Setup Met Backend (Productie)
 
 #### Optie A: Firebase Setup (Eenvoudigst)
 
@@ -242,60 +207,7 @@ app.put('/api/content', async (req, res) => {
 app.listen(3001);
 ```
 
-#### Optie B: Supabase Setup (Aanbevolen)
-
-1. **Maak Supabase account** op https://supabase.com
-2. **Maak nieuw project**
-3. **Maak tabel** in SQL Editor:
-   ```sql
-   CREATE TABLE content (
-     id TEXT PRIMARY KEY DEFAULT 'main',
-     data JSONB NOT NULL,
-     updated_at TIMESTAMP DEFAULT NOW()
-   );
-   ```
-4. **Deploy backend** (zie voorbeeld hieronder)
-
-**Backend Code Voorbeeld (Supabase):**
-
-```javascript
-const express = require('express');
-const { createClient } = require('@supabase/supabase-js');
-const app = express();
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
-
-app.get('/api/content', async (req, res) => {
-  const { data, error } = await supabase
-    .from('content')
-    .select('data')
-    .eq('id', 'main')
-    .single();
-  
-  if (error || !data) {
-    return res.status(404).json({ error: 'Not found' });
-  }
-  res.json(data.data);
-});
-
-app.put('/api/content', async (req, res) => {
-  const { error } = await supabase
-    .from('content')
-    .upsert({ id: 'main', data: req.body });
-  
-  if (error) {
-    return res.status(500).json({ error: error.message });
-  }
-  res.json({ success: true });
-});
-
-app.listen(3001);
-```
-
-#### Optie C: Eigen Server Setup
+#### Optie B: Eigen Server Setup
 
 1. **Kies hosting provider** (Heroku, Railway, DigitalOcean, etc.)
 2. **Deploy backend code** (zie `API_SETUP.md` voor voorbeelden)
@@ -327,7 +239,7 @@ npm run dev
 
 1. ✅ Open website
 2. ✅ Klik op instellingen-icoon (⚙️)
-3. ✅ Log in met admin credentials
+3. ✅ Open admin panel (⚙️ rechtsonder)
 4. ✅ Maak een kleine wijziging
 5. ✅ Controleer status indicator onderaan:
    - Zie je "Opgeslagen op de server"? ✅ Werkt!
@@ -374,7 +286,7 @@ npm run dev
 ### Q: Welke optie is het beste voor mij?
 
 **A:** 
-- **Beginner zonder technische kennis**: Firebase/Supabase (serverless)
+- **Beginner zonder technische kennis**: Firebase (serverless)
 - **Basis programmeerkennis**: Node.js/Python backend
 - **Bestaande hosting**: PHP backend
 
@@ -428,7 +340,6 @@ npm run dev
 
 ## Checklist voor Productie
 
-- [ ] Admin credentials ingesteld en veilig bewaard
 - [ ] Backend API geconfigureerd en getest
 - [ ] API URL correct ingesteld in `.env.local`
 - [ ] HTTPS ingeschakeld (voor veiligheid)

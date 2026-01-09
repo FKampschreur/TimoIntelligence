@@ -69,16 +69,9 @@ export const saveContent = async (
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
 
-    // Haal auth token op uit sessionStorage als beschikbaar
-    const authToken = sessionStorage.getItem('admin-auth-token');
-    
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
-    
-    if (authToken) {
-      headers['Authorization'] = `Bearer ${authToken}`;
-    }
 
     const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CONTENT}`, {
       method: 'PUT',
@@ -90,13 +83,6 @@ export const saveContent = async (
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      // Als unauthorized, probeer niet opnieuw
-      if (response.status === 401 || response.status === 403) {
-        return { 
-          success: false, 
-          error: 'Niet geautoriseerd - log opnieuw in' 
-        };
-      }
 
       // Retry bij server errors
       if (response.status >= 500 && retryCount < API_CONFIG.MAX_RETRIES) {

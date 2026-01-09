@@ -11,14 +11,8 @@ export default defineConfig(({ mode }) => {
         strictPort: false, // Laat Vite automatisch naar volgende poort gaan als 3000 bezet is
       },
       plugins: [react()],
-      // SECURITY: Do NOT expose API keys to client-side
-      // API keys should only be used server-side
-      // If you need to use API keys, create a backend proxy endpoint
       define: {
         // Only expose non-sensitive configuration
-        // Remove API key exposure - these should be server-side only
-        // 'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY), // REMOVED - Security risk
-        // 'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY) // REMOVED - Security risk
       },
       resolve: {
         alias: {

@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Settings, X, LogOut, Save, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import React, { useState } from 'react';
+import { Settings, X, Save, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import { useContent } from '../context/ContentContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TabButton } from './admin/inputs/TabButton';
-import { useAdminAuth } from '../hooks/useAdminAuth';
-import { AdminAuth } from './admin/AdminAuth';
 import { HeroEditor } from './admin/editors/HeroEditor';
 import { SolutionsEditor } from './admin/editors/SolutionsEditor';
 import { AboutEditor } from './admin/editors/AboutEditor';
@@ -17,14 +15,6 @@ const AdminPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'hero' | 'solutions' | 'about' | 'partners' | 'contact'>('hero');
   const { content, saveStatus, updateHero, updateSolution, addSolution, removeSolution, selectIconFromText, updateAbout, updatePartners, updateContact, forceSave } = useContent();
   const [showSaveMessage, setShowSaveMessage] = useState(false);
-  
-  // Use authentication hook
-  const auth = useAdminAuth();
-
-  const handleLogout = () => {
-    auth.handleLogout();
-    setIsOpen(false);
-  };
 
   const handleManualSave = async () => {
     await forceSave();
@@ -50,11 +40,7 @@ const AdminPanel: React.FC = () => {
     <>
       {/* Floating Trigger Button */}
       <button
-        onClick={() => {
-          setIsOpen(true);
-          // Reset authentication when opening (for security, require login each time)
-          auth.handleLogout();
-        }}
+        onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 z-50 p-4 bg-timo-accent text-black rounded-full shadow-[0_0_20px_rgba(6,182,212,0.5)] hover:bg-white transition-all duration-300 group"
         aria-label="Open Settings"
       >
@@ -82,33 +68,19 @@ const AdminPanel: React.FC = () => {
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="fixed top-0 right-0 h-full w-full max-w-md bg-neutral-900 border-l border-white/10 shadow-2xl z-[70] flex flex-col"
             >
-              {/* Login Screen */}
-              {!auth.isAuthenticated ? (
-                <AdminAuth {...auth} onClose={() => setIsOpen(false)} />
-              ) : (
-                <>
-                  {/* Header */}
-                  <div className="p-6 border-b border-white/10 flex justify-between items-center bg-timo-dark">
-                    <div className="flex items-center gap-3">
-                        <Settings className="w-5 h-5 text-timo-accent" />
-                        <h2 className="text-xl font-bold text-white">Site Editor</h2>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button 
-                          onClick={handleLogout}
-                          className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
-                          title="Uitloggen"
-                      >
-                        <LogOut className="w-5 h-5" />
-                      </button>
-                      <button 
-                          onClick={() => setIsOpen(false)}
-                          className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
+              {/* Header */}
+              <div className="p-6 border-b border-white/10 flex justify-between items-center bg-timo-dark">
+                <div className="flex items-center gap-3">
+                    <Settings className="w-5 h-5 text-timo-accent" />
+                    <h2 className="text-xl font-bold text-white">Site Editor</h2>
+                </div>
+                <button 
+                    onClick={() => setIsOpen(false)}
+                    className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
                   {/* Tabs */}
                   <div className="flex border-b border-white/10 overflow-x-auto">
@@ -154,7 +126,7 @@ const AdminPanel: React.FC = () => {
                 )}
               </div>
 
-                  {/* Footer */}
+              {/* Footer */}
                   <div className="p-4 border-t border-white/10 bg-timo-dark">
                     {/* Save Status */}
                     <div className="flex items-center justify-between mb-3">
@@ -212,8 +184,6 @@ const AdminPanel: React.FC = () => {
                       )}
                     </div>
                   </div>
-                </>
-              )}
             </motion.div>
           </>
         )}

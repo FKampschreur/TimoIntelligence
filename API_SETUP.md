@@ -203,7 +203,7 @@ Voor productie is het aanbevolen om een database te gebruiken in plaats van een 
 
 - **PostgreSQL/MySQL**: Voor relationele data
 - **MongoDB**: Voor document-gebaseerde opslag
-- **Firebase/Supabase**: Voor serverless oplossingen
+- **Firebase**: Voor serverless oplossingen
 
 ## CORS Configuratie
 
