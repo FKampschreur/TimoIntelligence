@@ -8,6 +8,7 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        strictPort: false, // Laat Vite automatisch naar volgende poort gaan als 3000 bezet is
       },
       plugins: [react()],
       // SECURITY: Do NOT expose API keys to client-side

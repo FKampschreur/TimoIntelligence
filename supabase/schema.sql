@@ -76,6 +76,82 @@ CREATE TABLE IF NOT EXISTS admin_users (
 CREATE INDEX IF NOT EXISTS idx_admin_users_username ON admin_users(username);
 CREATE INDEX IF NOT EXISTS idx_admin_users_is_active ON admin_users(is_active);
 
+-- ============================================
+-- Profiles Tabel voor Supabase Auth Users
+-- ============================================
+
+-- Tabel voor gebruikersprofielen (gekoppeld aan auth.users)
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT,
+  full_name TEXT,
+  avatar_url TEXT,
+  role TEXT DEFAULT 'user',
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Index voor profiles
+CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(email);
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
+CREATE INDEX IF NOT EXISTS idx_profiles_is_active ON profiles(is_active);
+
+-- Functie om automatisch een profiel aan te maken wanneer een nieuwe gebruiker wordt aangemaakt
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, full_name)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email)
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger om automatisch profiel aan te maken bij nieuwe gebruiker
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_user();
+
+-- Functie om updated_at automatisch bij te werken voor profiles
+CREATE OR REPLACE FUNCTION update_profiles_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger om updated_at automatisch bij te werken bij updates
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON profiles;
+CREATE TRIGGER update_profiles_updated_at
+  BEFORE UPDATE ON profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION update_profiles_updated_at();
+
+-- Schakel RLS in voor profiles tabel
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Gebruikers kunnen hun eigen profiel lezen
+CREATE POLICY "Users can view own profile"
+  ON profiles FOR SELECT
+  USING (auth.uid() = id);
+
+-- Policy: Gebruikers kunnen hun eigen profiel updaten
+CREATE POLICY "Users can update own profile"
+  ON profiles FOR UPDATE
+  USING (auth.uid() = id);
+
+-- Policy: Iedereen kan profielen lezen (optioneel - pas aan naar je behoeften)
+CREATE POLICY "Profiles are publicly readable"
+  ON profiles FOR SELECT
+  USING (true);
+
 -- Tabel voor audit log (optioneel, voor tracking van wijzigingen)
 CREATE TABLE IF NOT EXISTS audit_log (
   id SERIAL PRIMARY KEY,
@@ -271,6 +347,7 @@ ON CONFLICT (id) DO NOTHING;
 COMMENT ON TABLE content IS 'Hoofdtabel voor website content. Bevat alle bewerkbare content zoals hero, solutions, about, partners en contact secties.';
 COMMENT ON TABLE content_history IS 'Versiegeschiedenis van content wijzigingen. Maakt het mogelijk om wijzigingen terug te draaien.';
 COMMENT ON TABLE admin_users IS 'Admin gebruikers voor toegang tot het beheerpaneel.';
+COMMENT ON TABLE profiles IS 'Gebruikersprofielen gekoppeld aan Supabase Auth. Wordt automatisch aangemaakt wanneer een nieuwe gebruiker wordt geregistreerd.';
 COMMENT ON TABLE audit_log IS 'Audit log voor het bijhouden van alle wijzigingen en acties.';
 
 COMMENT ON FUNCTION get_latest_content() IS 'Haalt de laatste versie van content op.';

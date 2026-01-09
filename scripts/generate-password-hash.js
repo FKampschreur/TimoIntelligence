@@ -1,30 +1,30 @@
-#!/usr/bin/env node
-
 /**
- * Script om een SHA-256 hash te genereren van een wachtwoord
- * Voor gebruik in .env.local bestand
+ * Script om een password hash te genereren voor admin authenticatie
  * 
- * Gebruik: node scripts/generate-password-hash.js jouw_wachtwoord
+ * Gebruik: node scripts/generate-password-hash.js <wachtwoord>
+ * 
+ * Voorbeeld: node scripts/generate-password-hash.js mijnwachtwoord123
  */
 
-const crypto = require('crypto');
+import crypto from 'crypto';
 
+// Haal wachtwoord uit command line argumenten
 const password = process.argv[2];
 
 if (!password) {
-  console.error('❌ Geen wachtwoord opgegeven!');
+  console.error('❌ Geef een wachtwoord op als argument');
   console.log('\nGebruik:');
-  console.log('  node scripts/generate-password-hash.js jouw_wachtwoord');
+  console.log('  node scripts/generate-password-hash.js <wachtwoord>');
   console.log('\nVoorbeeld:');
-  console.log('  node scripts/generate-password-hash.js mijnVeiligeWachtwoord123');
+  console.log('  node scripts/generate-password-hash.js mijnwachtwoord123');
   process.exit(1);
 }
 
-// Genereer SHA-256 hash
+// Genereer SHA-256 hash (zelfde als in useAdminAuth.ts)
 const hash = crypto.createHash('sha256').update(password).digest('hex');
 
-console.log('\n✅ Wachtwoord hash gegenereerd!\n');
+console.log('\n✅ Password hash gegenereerd!\n');
 console.log('Voeg dit toe aan je .env.local bestand:\n');
-console.log(`VITE_ADMIN_USERNAME=jouw_gebruikersnaam`);
+console.log(`VITE_ADMIN_USERNAME=admin`);
 console.log(`VITE_ADMIN_PASSWORD_HASH=${hash}\n`);
-console.log('⚠️  Let op: Bewaar je wachtwoord veilig! Deze hash kan niet worden teruggedraaid.\n');
+console.log('⚠️  Let op: Bewaar je wachtwoord veilig en deel de hash niet!\n');
