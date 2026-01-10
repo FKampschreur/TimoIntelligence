@@ -1,10 +1,33 @@
 import React from 'react';
-import { Handshake, Award, Shield } from 'lucide-react';
+import { Handshake, Award, Shield, Cloud } from 'lucide-react';
 import { useContent } from '../context/ContentContext';
 
 const Partners: React.FC = () => {
   const { content } = useContent();
   const { partners } = content;
+
+  // Helper function to render description with line breaks for sub-items
+  const renderDescription = (text: string) => {
+    const lines = text.split('\n');
+    return (
+      <div className="text-gray-500 text-xs space-y-1">
+        {lines.map((line, index) => {
+          // Check if line is a sub-item (starts with bold text followed by colon)
+          if (line.includes(':') && line.length > 0) {
+            const [boldPart, ...restParts] = line.split(':');
+            const restText = restParts.join(':').trim();
+            return (
+              <div key={index} className="mt-2 first:mt-0">
+                <span className="font-semibold text-gray-400">{boldPart.trim()}:</span>
+                {restText && <span className="ml-1">{restText}</span>}
+              </div>
+            );
+          }
+          return <div key={index}>{line || '\u00A0'}</div>;
+        })}
+      </div>
+    );
+  };
 
   return (
     <div className="py-24 bg-timo-dark relative overflow-hidden">
@@ -15,23 +38,33 @@ const Partners: React.FC = () => {
         <div className="bg-timo-card border border-white/10 rounded-3xl p-8 md:p-12 lg:p-16 flex flex-col md:flex-row items-center gap-12">
             
             <div className="flex-1">
-                <h2 className="text-3xl font-bold text-white mb-6">{partners.title}</h2>
+                <h2 className="text-3xl font-bold text-white mb-2">{partners.title}</h2>
+                {partners.subtitle && (
+                  <p className="text-timo-accent text-sm mb-6 font-medium">{partners.subtitle}</p>
+                )}
                 <p className="text-gray-300 text-lg mb-8 leading-relaxed">
                     {partners.description}
                 </p>
                 <div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-4 p-4 bg-black/40 rounded-lg border border-white/5">
-                        <Award className="text-timo-accent w-6 h-6" />
-                        <div>
-                            <h4 className="text-white font-bold text-sm">{partners.feature1Title}</h4>
-                            <p className="text-gray-500 text-xs">{partners.feature1Description}</p>
+                    <div className="flex items-start gap-4 p-4 bg-black/40 rounded-lg border border-white/5">
+                        <Award className="text-timo-accent w-6 h-6 mt-0.5 shrink-0" />
+                        <div className="flex-1">
+                            <h4 className="text-white font-bold text-sm mb-1">{partners.feature1Title}</h4>
+                            <p className="text-gray-500 text-xs leading-relaxed">{partners.feature1Description}</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-4 p-4 bg-black/40 rounded-lg border border-white/5">
-                        <Shield className="text-timo-accent w-6 h-6" />
-                        <div>
-                            <h4 className="text-white font-bold text-sm">{partners.feature2Title}</h4>
-                            <p className="text-gray-500 text-xs">{partners.feature2Description}</p>
+                    <div className="flex items-start gap-4 p-4 bg-black/40 rounded-lg border border-white/5">
+                        <Cloud className="text-timo-accent w-6 h-6 mt-0.5 shrink-0" />
+                        <div className="flex-1">
+                            <h4 className="text-white font-bold text-sm mb-1">{partners.feature2Title}</h4>
+                            {renderDescription(partners.feature2Description)}
+                        </div>
+                    </div>
+                    <div className="flex items-start gap-4 p-4 bg-black/40 rounded-lg border border-white/5">
+                        <Shield className="text-timo-accent w-6 h-6 mt-0.5 shrink-0" />
+                        <div className="flex-1">
+                            <h4 className="text-white font-bold text-sm mb-1">{partners.feature3Title}</h4>
+                            {renderDescription(partners.feature3Description)}
                         </div>
                     </div>
                 </div>

@@ -22,9 +22,14 @@ export interface SaveStatus {
  * Haal content op van de API
  */
 export const fetchContent = async (): Promise<ApiResponse<ContentState>> => {
+  let timeoutId: NodeJS.Timeout | null = null;
+  let controller: AbortController | null = null;
+  
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
+    controller = new AbortController();
+    timeoutId = setTimeout(() => {
+      controller?.abort();
+    }, API_CONFIG.TIMEOUT);
 
     const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CONTENT}`, {
       method: 'GET',
@@ -34,7 +39,11 @@ export const fetchContent = async (): Promise<ApiResponse<ContentState>> => {
       signal: controller.signal,
     });
 
-    clearTimeout(timeoutId);
+    // Clear timeout immediately when request completes
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -47,6 +56,12 @@ export const fetchContent = async (): Promise<ApiResponse<ContentState>> => {
     const data = await response.json();
     return { success: true, data };
   } catch (error: any) {
+    // Ensure timeout is cleared even on error
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+    
     if (error.name === 'AbortError') {
       return { success: false, error: 'Request timeout - server reageert niet' };
     }
@@ -65,9 +80,14 @@ export const saveContent = async (
   content: ContentState,
   retryCount = 0
 ): Promise<ApiResponse<void>> => {
+  let timeoutId: NodeJS.Timeout | null = null;
+  let controller: AbortController | null = null;
+  
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
+    controller = new AbortController();
+    timeoutId = setTimeout(() => {
+      controller?.abort();
+    }, API_CONFIG.TIMEOUT);
 
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
@@ -80,7 +100,11 @@ export const saveContent = async (
       signal: controller.signal,
     });
 
-    clearTimeout(timeoutId);
+    // Clear timeout immediately when request completes
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
 
     if (!response.ok) {
 
@@ -98,6 +122,12 @@ export const saveContent = async (
 
     return { success: true };
   } catch (error: any) {
+    // Ensure timeout is cleared even on error
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+    
     if (error.name === 'AbortError') {
       // Retry bij timeout
       if (retryCount < API_CONFIG.MAX_RETRIES) {
@@ -137,9 +167,14 @@ export const sendContactForm = async (
     message: string;
   }
 ): Promise<ApiResponse<void>> => {
+  let timeoutId: NodeJS.Timeout | null = null;
+  let controller: AbortController | null = null;
+  
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
+    controller = new AbortController();
+    timeoutId = setTimeout(() => {
+      controller?.abort();
+    }, API_CONFIG.TIMEOUT);
 
     const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CONTACT}`, {
       method: 'POST',
@@ -150,7 +185,11 @@ export const sendContactForm = async (
       signal: controller.signal,
     });
 
-    clearTimeout(timeoutId);
+    // Clear timeout immediately when request completes
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -159,6 +198,12 @@ export const sendContactForm = async (
 
     return { success: true };
   } catch (error: any) {
+    // Ensure timeout is cleared even on error
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+    
     if (error.name === 'AbortError') {
       return { success: false, error: 'Request timeout - server reageert niet' };
     }

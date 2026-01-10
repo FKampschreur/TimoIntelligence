@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Timo Tender Content - Timo Intelligence</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        button {
+            background: #06b6d4;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0891b2;
+        }
+        .success {
+            color: #10b981;
+            margin-top: 20px;
+            padding: 15px;
+            background: #064e3b;
+            border-radius: 4px;
+        }
+        .error {
+            color: #ef4444;
+            margin-top: 20px;
+            padding: 15px;
+            background: #7f1d1d;
+            border-radius: 4px;
+        }
+        .info {
+            background: #262626;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .warning {
+            background: #78350f;
+            color: #fbbf24;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Update Timo Tender Content</h1>
+    <div class="info">
+        <p>Deze pagina werkt de Timo Tender content bij in localStorage.</p>
+        <p>Na het updaten, ververs de hoofdpagina (F5) om de wijzigingen te zien.</p>
+    </div>
+    
+    <button onclick="updateContent()">Update Timo Tender Content</button>
+    <button onclick="checkContent()">Controleer Huidige Content</button>
+    
+    <div id="result"></div>
+
+    <script>
+        function updateContent() {
+            try {
+                const storageKey = 'timo-intelligence-content';
+                const storedContent = localStorage.getItem(storageKey);
+                
+                if (!storedContent) {
+                    document.getElementById('result').innerHTML = 
+                        '<div class="warning">⚠ Geen content gevonden in localStorage.<br>De nieuwe standaard content wordt gebruikt bij de volgende pagina refresh.</div>';
+                    return;
+                }
+
+                let content;
+                try {
+                    // Probeer te parsen als JSON
+                    content = JSON.parse(storedContent);
+                } catch (e) {
+                    // Mogelijk versleuteld - probeer base64 decode
+                    try {
+                        const decoded = atob(storedContent);
+                        content = JSON.parse(decoded);
+                    } catch (e2) {
+                        document.getElementById('result').innerHTML = 
+                            '<div class="error">✗ Kan content niet parsen. Mogelijk is het versleuteld.<br>Gebruik clear-localstorage.html om localStorage te legen.</div>';
+                        return;
+                    }
+                }
+
+                // Zoek Timo Tender solution en update
+                if (content.solutions && Array.isArray(content.solutions)) {
+                    const tenderIndex = content.solutions.findIndex(s => s.id === 'tender' || s.title === 'Timo Tender');
+                    
+                    if (tenderIndex !== -1) {
+                        const oldTitle = content.solutions[tenderIndex].detailTitle;
+                        const oldText = content.solutions[tenderIndex].detailText;
+                        
+                        content.solutions[tenderIndex].detailTitle = 'De kritische kracht achter de perfecte match.';
+                        content.solutions[tenderIndex].detailText = 'Een aanbesteding win je niet met standaardantwoorden, maar met de beste oplossing. Timo Tender is onze exclusieve, interne challenger die het team van Holland Food Service scherp houdt.\n\nDeze module schrijft geen blindelings aanbod, maar fungeert als een intelligente kwaliteitsmanager. Timo analyseert uw uitvraag tot in de kern en toetst onze concepten genadeloos: Geven wij écht antwoord op de vraag van de zorgorganisatie? Is dit de beste versie van onszelf?\n\nDaarnaast scant Timo continu de markt op trends, sterktes en zwaktes. Hierdoor ontvangt u geen generiek verhaal, maar een doordacht voorstel dat feitelijk klopt, perfect aansluit op uw wensen en rekening houdt met de wereld van morgen.';
+                        
+                        // Sla op
+                        try {
+                            const contentString = JSON.stringify(content);
+                            localStorage.setItem(storageKey, contentString);
+                            document.getElementById('result').innerHTML = 
+                                '<div class="success">✓ Timo Tender content succesvol bijgewerkt!<br><br>' +
+                                '<strong>Oude titel:</strong> ' + oldTitle + '<br>' +
+                                '<strong>Nieuwe titel:</strong> ' + content.solutions[tenderIndex].detailTitle + '<br><br>' +
+                                'Ververs nu de hoofdpagina (F5) om de wijzigingen te zien.</div>';
+                        } catch (saveError) {
+                            document.getElementById('result').innerHTML = 
+                                '<div class="error">✗ Fout bij opslaan: ' + saveError.message + '</div>';
+                        }
+                    } else {
+                        document.getElementById('result').innerHTML = 
+                            '<div class="error">✗ Timo Tender solution niet gevonden in content.</div>';
+                    }
+                } else {
+                    document.getElementById('result').innerHTML = 
+                        '<div class="error">✗ Geen solutions array gevonden in content.</div>';
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    '<div class="error">✗ Fout bij updaten: ' + error.message + '</div>';
+            }
+        }
+
+        function checkContent() {
+            try {
+                const storageKey = 'timo-intelligence-content';
+                const storedContent = localStorage.getItem(storageKey);
+                
+                if (!storedContent) {
+                    document.getElementById('result').innerHTML = 
+                        '<div class="info">LocalStorage is leeg - de standaard content wordt gebruikt.</div>';
+                    return;
+                }
+
+                let content;
+                try {
+                    content = JSON.parse(storedContent);
+                } catch (e) {
+                    try {
+                        const decoded = atob(storedContent);
+                        content = JSON.parse(decoded);
+                    } catch (e2) {
+                        document.getElementById('result').innerHTML = 
+                            '<div class="error">Kan content niet parsen. Mogelijk is het versleuteld.</div>';
+                        return;
+                    }
+                }
+
+                if (content.solutions && Array.isArray(content.solutions)) {
+                    const tender = content.solutions.find(s => s.id === 'tender' || s.title === 'Timo Tender');
+                    if (tender) {
+                        document.getElementById('result').innerHTML = 
+                            '<div class="info">' +
+                            '<strong>Huidige Timo Tender Content:</strong><br><br>' +
+                            '<strong>Titel:</strong> ' + (tender.detailTitle || 'Geen titel') + '<br><br>' +
+                            '<strong>Tekst:</strong> ' + (tender.detailText ? tender.detailText.substring(0, 200) + '...' : 'Geen tekst') +
+                            '</div>';
+                    } else {
+                        document.getElementById('result').innerHTML = 
+                            '<div class="error">Timo Tender solution niet gevonden.</div>';
+                    }
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    '<div class="error">Fout bij controleren: ' + error.message + '</div>';
+            }
+        }
+
+        // Auto-check on load
+        window.onload = checkContent;
+    </script>
+</body>
+</html>

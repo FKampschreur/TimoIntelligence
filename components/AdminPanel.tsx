@@ -36,6 +36,12 @@ const AdminPanel: React.FC = () => {
     if (!date) return '';
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
+    
+    // Handle edge case where date is in the future
+    if (diffMs < 0) {
+      return 'zojuist';
+    }
+    
     const diffSecs = Math.floor(diffMs / 1000);
     const diffMins = Math.floor(diffSecs / 60);
     

@@ -11,10 +11,11 @@ import Footer from './components/Footer';
 import AdminPanel from './components/AdminPanel';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ContentProvider } from './context/ContentContext';
+import { agentLog } from './utils/agentLogging';
 
 const App: React.FC = () => {
   // #region agent log
-  fetch('http://127.0.0.1:7245/ingest/73ac9368-5f22-431a-97d8-807ae4abf6aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.tsx:16',message:'App component rendering',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  agentLog('App.tsx:16', 'App component rendering');
   // #endregion
   return (
     <ErrorBoundary>

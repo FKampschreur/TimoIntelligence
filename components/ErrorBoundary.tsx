@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { agentLog } from '../utils/agentLogging';
 
 interface Props {
   children: ReactNode;
@@ -27,14 +28,19 @@ class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // #region agent log
-    fetch('http://127.0.0.1:7245/ingest/73ac9368-5f22-431a-97d8-807ae4abf6aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ErrorBoundary.tsx:27',message:'React error caught',data:{error:error.message,componentStack:errorInfo.componentStack,isStrictMode:error.message.includes('ContentProvider'),isDev:(import.meta as any).env?.DEV},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+    const isDev = (import.meta as any).env?.DEV || (import.meta as any).env?.MODE === 'development';
+    agentLog('ErrorBoundary.tsx:27', 'React error caught', {
+      error: error.message,
+      componentStack: errorInfo.componentStack,
+      isStrictMode: error.message.includes('ContentProvider'),
+      isDev
+    });
     // #endregion
     
     // Log StrictMode context errors as warnings instead of errors
-    const isDev = (import.meta as any).env?.DEV || (import.meta as any).env?.MODE === 'development';
     if (isDev && error.message.includes('ContentProvider')) {
       // #region agent log
-      fetch('http://127.0.0.1:7245/ingest/73ac9368-5f22-431a-97d8-807ae4abf6aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ErrorBoundary.tsx:33',message:'Ignoring StrictMode context error',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+      agentLog('ErrorBoundary.tsx:33', 'Ignoring StrictMode context error');
       // #endregion
       console.warn('StrictMode context error (ignored):', error.message);
       return;

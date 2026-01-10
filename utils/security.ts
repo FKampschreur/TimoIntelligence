@@ -122,8 +122,12 @@ export class LocalStorageEncryption {
     }
 
     // Import key
+    const matchResult = keyData.match(/.{1,2}/g);
+    if (!matchResult) {
+      throw new Error('Invalid key format in sessionStorage');
+    }
     const keyBuffer = new Uint8Array(
-      keyData.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16))
+      matchResult.map(byte => parseInt(byte, 16))
     );
 
     return await crypto.subtle.importKey(
@@ -166,8 +170,9 @@ export class LocalStorageEncryption {
       return btoa(String.fromCharCode(...combined));
     } catch (error) {
       console.error('Encryption error:', error);
-      // Fallback to unencrypted storage if encryption fails
-      return data;
+      // Throw error instead of silently falling back to unencrypted
+      // This ensures we know when encryption fails
+      throw new Error(`Encryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -203,8 +208,9 @@ export class LocalStorageEncryption {
       return decoder.decode(decrypted);
     } catch (error) {
       console.error('Decryption error:', error);
-      // If decryption fails, try to return as-is (for backward compatibility)
-      return encryptedData;
+      // Throw error instead of returning encrypted data
+      // This prevents treating encrypted string as valid JSON
+      throw new Error(`Decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }
@@ -262,8 +268,9 @@ export class RateLimiter {
       return true;
     } catch (error) {
       console.error('Rate limiter error:', error);
-      // On error, allow the action (fail open)
-      return true;
+      // For security, fail closed instead of open
+      // This prevents bypassing rate limits if localStorage fails
+      return false;
     }
   }
 

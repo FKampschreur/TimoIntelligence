@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear LocalStorage - Timo Intelligence</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        button {
+            background: #06b6d4;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0891b2;
+        }
+        .success {
+            color: #10b981;
+            margin-top: 20px;
+        }
+        .error {
+            color: #ef4444;
+            margin-top: 20px;
+        }
+        .info {
+            background: #262626;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Clear LocalStorage</h1>
+    <div class="info">
+        <p>Deze pagina helpt je om de opgeslagen content in je browser te verwijderen.</p>
+        <p>Na het legen van localStorage zal de website de nieuwe standaard content gebruiken.</p>
+    </div>
+    
+    <button onclick="clearStorage()">Verwijder LocalStorage</button>
+    <button onclick="checkStorage()">Controleer LocalStorage</button>
+    
+    <div id="result"></div>
+
+    <script>
+        function clearStorage() {
+            try {
+                localStorage.removeItem('timo-intelligence-content');
+                document.getElementById('result').innerHTML = 
+                    '<div class="success">✓ LocalStorage succesvol geleegd!<br>Ververs nu de hoofdpagina (F5 of Ctrl+R).</div>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    '<div class="error">✗ Fout bij legen van localStorage: ' + error.message + '</div>';
+            }
+        }
+
+        function checkStorage() {
+            try {
+                const content = localStorage.getItem('timo-intelligence-content');
+                if (content) {
+                    let preview = content.substring(0, 200);
+                    if (content.length > 200) preview += '...';
+                    document.getElementById('result').innerHTML = 
+                        '<div class="info">LocalStorage bevat content (' + content.length + ' karakters):<br><pre style="word-break: break-all;">' + 
+                        preview + '</pre></div>';
+                } else {
+                    document.getElementById('result').innerHTML = 
+                        '<div class="success">LocalStorage is leeg - de standaard content wordt gebruikt.</div>';
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    '<div class="error">Fout bij controleren: ' + error.message + '</div>';
+            }
+        }
+
+        // Auto-check on load
+        window.onload = checkStorage;
+    </script>
+</body>
+</html>

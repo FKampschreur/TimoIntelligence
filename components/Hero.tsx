@@ -39,14 +39,16 @@ const Hero: React.FC = () => {
           </span>
         </motion.h1>
 
-        <motion.p 
+        <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="mt-4 max-w-2xl text-xl text-gray-400 font-light leading-relaxed"
+            className="mt-4 max-w-2xl text-xl text-gray-400 font-light leading-relaxed space-y-4"
         >
-          {hero.description}
-        </motion.p>
+          {(hero.description || '').split('\n\n').filter(p => p.trim()).map((paragraph, index) => (
+            <p key={index}>{paragraph}</p>
+          ))}
+        </motion.div>
 
         <motion.div 
             initial={{ opacity: 0, y: 20 }}

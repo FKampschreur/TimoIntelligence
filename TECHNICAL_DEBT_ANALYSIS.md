@@ -1,403 +1,333 @@
 # Technical Debt Analysis - Timo Intelligence
 
-## 📊 Executive Summary
-
-**Most Complex File:** `components/AdminPanel.tsx` (760 lines)
-**Total Issues Found:** 15
-**Estimated Refactoring Effort:** 8-12 hours
+**Date:** $(date)  
+**Focus:** Code duplication, complexity, unused code
 
 ---
 
-## 🔴 KRITIEKE TECHNICAL DEBT
+## Executive Summary
 
-### 1. Code Duplication: Icon Mapping Functions
-**Severity:** HIGH  
-**Locations:**
-- `components/Solutions.tsx:11-39` - `getIcon()` function (29 lines)
-- `components/Ecosystem.tsx:11-40` - `getIconComponent()` function (30 lines)
-
-**Issue:** Identieke icon mapping logica wordt gedupliceerd in 2 bestanden. Beide functies doen hetzelfde maar met verschillende props.
-
-**Impact:**
-- Maintenance nightmare: icon toevoegen vereist wijzigingen in 2 plaatsen
-- Inconsistentie risico: verschillende default sizes kunnen verwarring veroorzaken
-- Code bloat: ~60 regels duplicatie
-
-**Refactoring:** Extract naar `utils/iconMapper.ts`
+The codebase is generally well-structured, but `context/ContentContext.tsx` (763 lines) is the most complex file and contains significant technical debt. Key issues include code duplication in update functions, complex validation logic, and deeply nested state management.
 
 ---
 
-### 2. Code Duplication: Tab Button Rendering
-**Severity:** HIGH  
-**Location:** `components/AdminPanel.tsx:283-317`
+## 1. Code Duplication (DRY Violations)
 
-**Issue:** 5 bijna identieke tab buttons met alleen verschillen in:
-- `onClick` handler
-- `activeTab` check
-- Label tekst
+### 🔴 High Priority
 
-**Code Pattern:**
+#### 1.1 **Duplicate Update Functions Pattern**
+**Location:** `context/ContentContext.tsx:554-728`
+
+**Issue:** Four nearly identical update functions with only minor differences:
+- `updateHero()` (lines 554-564)
+- `updateAbout()` (lines 691-702)
+- `updatePartners()` (lines 704-715)
+- `updateContact()` (lines 717-728)
+
+**Duplication:**
 ```typescript
-<button
-    onClick={() => setActiveTab('hero')}
-    className={`flex-shrink-0 px-3 py-3 text-xs font-medium transition-colors relative ${activeTab === 'hero' ? 'text-timo-accent' : 'text-gray-400 hover:text-white'}`}
->
-    Hero
-    {activeTab === 'hero' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-timo-accent"></div>}
-</button>
-```
-(Herhaald 5x met kleine variaties)
-
-**Impact:**
-- 35 regels repetitieve code
-- Moeilijk onderhoudbaar
-- Risico op inconsistentie
-
-**Refactoring:** Extract naar `TabButton` component
-
----
-
-### 3. Excessive File Size: AdminPanel.tsx
-**Severity:** HIGH  
-**Location:** `components/AdminPanel.tsx` (760 lines)
-
-**Issues:**
-- Te veel verantwoordelijkheden in één component:
-  - Authentication logic
-  - Form handling
-  - File upload
-  - Tab navigation
-  - Content editing (5 verschillende tabs)
-  - Image preview
-- 9 useState hooks (veel state management)
-- Diepe nesting (tot 6-7 levels)
-- Moeilijk te testen
-- Moeilijk te begrijpen
-
-**Complexity Metrics:**
-- Lines of Code: 760
-- Cyclomatic Complexity: ~45 (zeer hoog)
-- Max Nesting Depth: 7 levels
-- State Variables: 9
-- Functions: 8+
-
-**Refactoring:** Split in meerdere componenten:
-- `AdminAuth.tsx` - Authentication logic
-- `AdminTabs.tsx` - Tab navigation
-- `HeroEditor.tsx` - Hero content editor
-- `SolutionsEditor.tsx` - Solutions editor
-- `AboutEditor.tsx` - About editor
-- `PartnersEditor.tsx` - Partners editor
-- `ContactEditor.tsx` - Contact editor
-- `ImageInput.tsx` - Image upload component (al deels geëxtraheerd)
-
----
-
-## 🟠 MEDIUM TECHNICAL DEBT
-
-### 4. Code Duplication: Image Error Handlers
-**Severity:** MEDIUM  
-**Locations:**
-- `components/Solutions.tsx:74-79` (grid image)
-- `components/Solutions.tsx:138-143` (modal image)
-- `components/AdminPanel.tsx:740-745` (preview image)
-
-**Issue:** Identieke `onError` handler logica wordt 3x herhaald:
-```typescript
-onError={(e) => {
-  console.error(`Failed to load image...`);
-  (e.target as HTMLImageElement).style.display = 'none';
-}}
+// Pattern repeated 4 times:
+const updateX = (key: keyof XData, value: string) => {
+  const maxLength = /* different logic */;
+  const sanitized = /* different logic */;
+  setContent(prev => ({
+    ...prev,
+    x: {
+      ...prev.x,
+      [key]: sanitized
+    }
+  }));
+};
 ```
 
 **Impact:** 
-- 3x dezelfde logica
-- Moeilijk om error handling te verbeteren (moet op 3 plaatsen)
+- 4 functions × ~10 lines = 40 lines of duplicated code
+- Changes to sanitization logic must be made in 4 places
+- Risk of inconsistent behavior
 
-**Refactoring:** Extract naar utility functie of custom hook
+**Recommendation:** Create generic `updateField()` helper function.
 
 ---
 
-### 5. Code Duplication: Update Functions Sanitization
-**Severity:** MEDIUM  
-**Location:** `context/ContentContext.tsx:292-410`
+#### 1.2 **Duplicate Validation Logic**
+**Location:** `context/ContentContext.tsx:210-273` and `276-325`
 
-**Issue:** Sanitization logica wordt herhaald in:
-- `updateHero()` - sanitizeInput call
-- `updateSolution()` - conditional sanitization
-- `updateAbout()` - conditional sanitization  
-- `updatePartners()` - sanitizeInput call
-- `updateContact()` - sanitizeInput call
+**Issue:** Two validation functions with overlapping logic:
+- `validateContentStructure()` (lines 210-273) - comprehensive validation
+- `loadSavedContentFromLocalStorage()` (lines 276-325) - partial validation
 
-**Pattern:**
+**Duplication:**
 ```typescript
-const sanitized = sanitizeInput(value, maxLength);
-// of
-const sanitized = field === 'imageUrl' ? sanitizeUrl(value) || value : sanitizeInput(value, maxLength);
+// Both check:
+- parsed.hero && typeof parsed.hero === 'object'
+- Array.isArray(parsed.solutions)
+- parsed.solutions.every((sol: any) => 
+    typeof sol.id === 'string' &&
+    typeof sol.title === 'string' &&
+    // ... same checks
+  )
 ```
 
 **Impact:**
-- Repetitieve code
-- Max length logica verspreid over meerdere functies
-- Moeilijk om sanitization regels te wijzigen
+- Validation logic duplicated
+- `loadSavedContentFromLocalStorage()` uses incomplete validation
+- Risk of validation inconsistencies
 
-**Refactoring:** Extract naar `sanitizeFieldValue()` helper
+**Recommendation:** Use `validateContentStructure()` in `loadSavedContentFromLocalStorage()`.
 
 ---
 
-### 6. Complex Function: selectIconFromText
-**Severity:** MEDIUM  
-**Location:** `context/ContentContext.tsx:342-389` (48 lines)
+#### 1.3 **Duplicate Field Validation Pattern**
+**Location:** `context/ContentContext.tsx:219-220, 249-250, 258-259, 267-268`
+
+**Issue:** Same validation pattern repeated for each section:
+```typescript
+const heroFields = ['tag', 'titleLine1', ...];
+if (!heroFields.every(field => typeof data.hero[field] === 'string')) {
+  return false;
+}
+// Repeated for about, partners, contact
+```
+
+**Impact:** 4 × 3 lines = 12 lines of duplication
+
+**Recommendation:** Extract to helper function `validateStringFields()`.
+
+---
+
+### 🟡 Medium Priority
+
+#### 1.4 **Similar Editor Component Structure**
+**Location:** `components/admin/editors/*.tsx`
+
+**Issue:** All editor components follow identical pattern:
+- Import same components (`InputGroup`, `TextAreaGroup`)
+- Use `INPUT_LIMITS` constants
+- Similar JSX structure with sections
+
+**Impact:** Low - this is acceptable duplication for component clarity
+
+**Recommendation:** Consider creating `FieldSection` wrapper component (optional).
+
+---
+
+## 2. Complexity Issues
+
+### 🔴 Critical Complexity
+
+#### 2.1 **ContentContext.tsx - 763 Lines**
+**Location:** `context/ContentContext.tsx`
+
+**Metrics:**
+- **Lines:** 763
+- **Functions:** 18+ functions
+- **Cyclomatic Complexity:** High (multiple nested conditions)
+- **Max Nesting Depth:** 4-5 levels
+
+**Complex Functions:**
+
+1. **`persistContent()`** (lines 416-512)
+   - **Lines:** 96
+   - **Nesting:** 4 levels
+   - **Responsibilities:** API save, localStorage save, encryption, error handling
+   - **Complexity Score:** 15/10
+
+2. **`loadContent()` (inside useEffect)** (lines 337-410)
+   - **Lines:** 73
+   - **Nesting:** 5 levels (try-catch-inside-try-catch)
+   - **Responsibilities:** API load, localStorage load, decryption, validation
+   - **Complexity Score:** 12/10
+
+3. **`validateContentStructure()`** (lines 210-273)
+   - **Lines:** 63
+   - **Nesting:** 3 levels
+   - **Responsibilities:** Validates entire content structure
+   - **Complexity Score:** 8/10
+
+4. **`selectIconFromText()`** (lines 604-651)
+   - **Lines:** 47
+   - **Nesting:** 3 levels
+   - **Responsibilities:** Keyword matching, scoring, selection
+   - **Complexity Score:** 7/10
 
 **Issues:**
-- Grote switch-like object (25 icon keywords)
-- Complex scoring algoritme
-- Diepe nesting (reduce binnen reduce)
-- Moeilijk te testen
-- Performance: loopt door alle icons voor elke call
-
-**Complexity:**
-- Lines: 48
-- Cyclomatic Complexity: ~30
-- Nested loops: 2 levels
-
-**Refactoring:** 
-- Extract iconKeywords naar config file
-- Simplify scoring algorithm
-- Add memoization voor performance
+- Single file handles: state management, validation, persistence, encryption, API calls
+- Too many responsibilities (SRP violation)
+- Hard to test individual pieces
+- Difficult to understand flow
 
 ---
 
-### 7. Debug Logging Code Pollution
-**Severity:** MEDIUM  
-**Locations:** 124 matches across 21 files
+#### 2.2 **Deep Nesting in useEffect**
+**Location:** `context/ContentContext.tsx:331-413`
 
-**Issue:** Debug logging code (`#region agent log`) is overal aanwezig maar niet nodig in production:
+**Issue:** Nested try-catch blocks:
 ```typescript
-// #region agent log
-fetch('http://127.0.0.1:7245/ingest/...', {...}).catch(()=>{});
-// #endregion
+useEffect(() => {
+  const loadContent = async () => {
+    try {
+      if (isApiAvailable()) {
+        try {  // Nested try
+          // API logic
+        } catch { }
+      }
+      // localStorage logic
+      try {  // Another nested try
+        // decryption logic
+      } catch { }
+    } catch { }
+  };
+}, []);
 ```
 
-**Impact:**
-- Code pollution: ~250+ regels debug code
-- Performance impact: onnodige fetch calls
-- Bundle size increase
-- Moeilijk te lezen code
-
-**Refactoring:** 
-- Remove alle debug logging
-- Of: conditional compilation voor development only
+**Impact:** Hard to follow error flow, difficult to debug
 
 ---
 
-### 8. Repetitive Tab Content Rendering
-**Severity:** MEDIUM  
-**Location:** `components/AdminPanel.tsx:323-539`
+### 🟡 Medium Complexity
 
-**Issue:** Elke tab heeft vergelijkbare structuur:
-- Conditional rendering: `{activeTab === 'hero' && (...)}`
-- InputGroup/TextAreaGroup components
-- Section headers met `pt-4 border-t border-white/5`
-- Similar layout patterns
+#### 2.3 **updateSolution() - Complex Sanitization**
+**Location:** `context/ContentContext.tsx:566-601`
 
-**Impact:**
-- 200+ regels repetitieve JSX
-- Moeilijk om layout te wijzigen (moet op 5 plaatsen)
-
-**Refactoring:** Extract naar separate editor components
-
----
-
-## 🟡 LAGE TECHNICAL DEBT
-
-### 9. Unused Import: Save
-**Severity:** LOW  
-**Location:** `components/AdminPanel.tsx:2`
-
-**Issue:** `Save` icon wordt geïmporteerd maar nooit gebruikt
-
-**Impact:** Minimale impact, maar onnodige import
-
----
-
-### 10. Magic Numbers
-**Severity:** LOW  
-**Locations:** Multiple
-
-**Examples:**
-- `15 * 60 * 1000` (15 minutes) - AdminPanel.tsx:77
-- `8 * 60 * 60 * 1000` (8 hours) - AdminPanel.tsx:107
-- `5 * 1024 * 1024` (5MB) - AdminPanel.tsx:610
-- `360 / solutions.length` - Ecosystem.tsx:66
-
-**Impact:** Moeilijk te begrijpen zonder comments
-
-**Refactoring:** Extract naar named constants
-
----
-
-### 11. Inline Styles Mixed with Tailwind
-**Severity:** LOW  
-**Location:** `components/Ecosystem.tsx:101, 175-176`
-
-**Issue:** Mix van inline styles en Tailwind classes:
+**Issue:** Multiple conditional branches for different field types:
 ```typescript
-style={{ height: `${containerHeight}px` }}
-style={{ left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)` }}
+if (field === 'image') {
+  sanitizedValue = sanitizeUrl(value as string) || (value as string);
+} else if (typeof value === 'string') {
+  const maxLength = field === 'detailText' ? 10000 : 
+                     field === 'description' ? 2000 : 500;
+  sanitizedValue = sanitizeInput(value, maxLength);
+}
 ```
 
-**Impact:** Inconsistent styling approach
+**Impact:** Complex conditional logic, hard to extend
 
 ---
 
-### 12. Hardcoded Strings
-**Severity:** LOW  
-**Locations:** Multiple
+## 3. Unused Code
 
-**Issue:** UI strings zijn hardcoded in plaats van constants:
-- Error messages
-- Button labels
-- Placeholder text
+### 🟢 Low Priority
 
-**Impact:** Moeilijk te internationaliseren
+#### 3.1 **Unused Function: `loadSavedContentFromLocalStorage()`**
+**Location:** `context/ContentContext.tsx:276-325`
+
+**Status:** Function exists but is only called once at initialization (line 327). The logic is duplicated in `loadContent()` useEffect.
+
+**Recommendation:** Remove and use `validateContentStructure()` directly.
 
 ---
 
-### 13. Long Parameter Lists
-**Severity:** LOW  
-**Location:** `components/Ecosystem.tsx:155`
+#### 3.2 **Unused Import Check**
+**Files checked:** All components
 
-**Issue:** `SatelliteNode` component heeft 5 parameters:
-```typescript
-const SatelliteNode: React.FC<{ icon: React.ReactNode; label: string; angle: number; radius: number; delay: number }>
+**Findings:**
+- All imports appear to be used
+- No obvious dead code found
+- Agent logging imports are used
+
+**Status:** ✅ No unused imports detected
+
+---
+
+## Complexity Metrics Summary
+
+| File | Lines | Functions | Max Nesting | Complexity Score |
+|------|-------|-----------|-------------|------------------|
+| `ContentContext.tsx` | 763 | 18+ | 5 | 🔴 **Very High** |
+| `apiService.ts` | 187 | 4 | 3 | 🟡 Medium |
+| `security.ts` | 326 | 6 | 3 | 🟡 Medium |
+| `Contact.tsx` | 292 | 1 | 4 | 🟡 Medium |
+| `SolutionsEditor.tsx` | 165 | 1 | 3 | 🟢 Low |
+
+---
+
+## Most Complex File: `ContentContext.tsx`
+
+### Current Structure
+```
+ContentContext.tsx (763 lines)
+├── Type definitions (73 lines)
+├── Default content (97 lines)
+├── Context setup (3 lines)
+├── ContentProvider component (548 lines)
+│   ├── State & Refs (12 lines)
+│   ├── validateContentStructure() (63 lines) ⚠️
+│   ├── loadSavedContentFromLocalStorage() (49 lines) ⚠️ DUPLICATE
+│   ├── useEffect - loadContent() (82 lines) ⚠️ COMPLEX
+│   ├── persistContent() (96 lines) ⚠️ COMPLEX
+│   ├── useEffect - debounced save (28 lines)
+│   ├── forceSave() (2 lines)
+│   ├── updateContent() (2 lines)
+│   ├── updateHero() (10 lines) ⚠️ DUPLICATE
+│   ├── updateSolution() (35 lines) ⚠️ COMPLEX
+│   ├── selectIconFromText() (47 lines) ⚠️ COMPLEX
+│   ├── addSolution() (25 lines)
+│   ├── removeSolution() (8 lines)
+│   ├── updateAbout() (11 lines) ⚠️ DUPLICATE
+│   ├── updatePartners() (11 lines) ⚠️ DUPLICATE
+│   ├── updateContact() (11 lines) ⚠️ DUPLICATE
+│   └── Provider JSX (17 lines)
+└── useContent hook (12 lines)
 ```
 
-**Impact:** Moeilijk te gebruiken, kan worden verbeterd met object parameter
+---
+
+## Refactoring Priority
+
+### Priority 1: Extract Update Functions (High Impact, Low Risk)
+- Create generic `updateField()` function
+- Reduces 40 lines → ~15 lines
+- Eliminates 4 duplicate functions
+
+### Priority 2: Extract Validation Logic (High Impact, Medium Risk)
+- Move `validateContentStructure()` to separate file
+- Remove duplicate validation in `loadSavedContentFromLocalStorage()`
+- Reduces complexity
+
+### Priority 3: Extract Persistence Logic (High Impact, High Risk)
+- Create `ContentPersistence` service class
+- Move `persistContent()` and `loadContent()` logic
+- Reduces ContentContext by ~150 lines
+
+### Priority 4: Extract Icon Selection (Medium Impact, Low Risk)
+- Move `selectIconFromText()` to `utils/iconMapper.tsx`
+- Move keyword mapping to config file
+- Reduces ContentContext by ~50 lines
 
 ---
 
-### 14. Complex Conditional Logic
-**Severity:** LOW  
-**Location:** `components/Solutions.tsx:57-59`
+## Estimated Refactoring Impact
 
-**Issue:** Complexe conditional voor grid centering:
-```typescript
-const isLastItem = index === content.solutions.length - 1;
-const isOddCount = content.solutions.length % 2 !== 0;
-const shouldCenter = isLastItem && isOddCount;
-```
+| Refactoring | Lines Reduced | Complexity Reduction | Risk Level |
+|------------|---------------|---------------------|------------|
+| Extract Update Functions | 40 → 15 | Medium | Low |
+| Extract Validation | 50 → 30 | High | Medium |
+| Extract Persistence | 150 → 50 | High | High |
+| Extract Icon Selection | 50 → 10 | Low | Low |
+| **Total** | **290 → 105** | **High** | **Medium** |
 
-**Impact:** Moeilijk te begrijpen zonder context
-
----
-
-### 15. Missing Type Safety
-**Severity:** LOW  
-**Location:** `components/AdminPanel.tsx:417`
-
-**Issue:** Type assertion zonder validatie:
-```typescript
-onChange={(e) => updateSolution(index, 'iconName', e.target.value as any)}
-```
-
-**Impact:** Type safety risico
+**Target:** Reduce `ContentContext.tsx` from 763 → ~470 lines (38% reduction)
 
 ---
 
-## 📋 REFACTORING PLAN: AdminPanel.tsx
+## Recommendations
 
-### Fase 1: Extract Authentication (2-3 uur)
-**Doel:** Verwijder authentication logic uit AdminPanel
-
-**Stappen:**
-1. Maak `hooks/useAdminAuth.ts` custom hook
-2. Verplaats alle auth state en logic naar hook
-3. Update AdminPanel om hook te gebruiken
-
-**Resultaat:** ~150 regels minder in AdminPanel
+1. **Immediate:** Extract update functions (1-2 hours)
+2. **Short-term:** Extract validation logic (2-3 hours)
+3. **Medium-term:** Extract persistence service (4-6 hours)
+4. **Long-term:** Consider splitting ContentContext into multiple contexts (HeroContext, SolutionsContext, etc.)
 
 ---
 
-### Fase 2: Extract Tab Components (3-4 uur)
-**Doel:** Split tab content in separate components
+## Code Quality Metrics
 
-**Stappen:**
-1. Maak `components/admin/HeroEditor.tsx`
-2. Maak `components/admin/SolutionsEditor.tsx`
-3. Maak `components/admin/AboutEditor.tsx`
-4. Maak `components/admin/PartnersEditor.tsx`
-5. Maak `components/admin/ContactEditor.tsx`
-6. Extract `TabButton` component
-7. Update AdminPanel om nieuwe components te gebruiken
-
-**Resultaat:** AdminPanel wordt ~400 regels kleiner
+- **Duplication:** ~90 lines of duplicated code
+- **Complexity:** 1 file exceeds recommended 300-line limit
+- **Unused Code:** 1 unused function (~50 lines)
+- **Test Coverage:** Unknown (no test files found)
 
 ---
 
-### Fase 3: Extract Shared Utilities (1-2 uur)
-**Doel:** Verwijder duplicatie
+## Next Steps
 
-**Stappen:**
-1. Maak `utils/iconMapper.ts` voor icon mapping
-2. Extract image error handler naar utility
-3. Extract tab button naar component
-4. Update alle bestanden om utilities te gebruiken
-
-**Resultaat:** ~100 regels duplicatie verwijderd
-
----
-
-### Fase 4: Cleanup & Optimization (1-2 uur)
-**Doel:** Final cleanup
-
-**Stappen:**
-1. Verwijder debug logging code
-2. Extract magic numbers naar constants
-3. Verbeter type safety
-4. Add JSDoc comments
-
-**Resultaat:** Schonere, beter gedocumenteerde code
-
----
-
-## 📈 Expected Improvements
-
-### Code Metrics (After Refactoring)
-
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| AdminPanel.tsx LOC | 760 | ~200 | -74% |
-| Code Duplication | ~300 lines | ~50 lines | -83% |
-| Max Nesting Depth | 7 levels | 4 levels | -43% |
-| Cyclomatic Complexity | ~45 | ~15 | -67% |
-| Number of Components | 1 monolith | 8 focused | +700% |
-
-### Benefits
-
-1. **Maintainability:** ✅ Veel makkelijker om te onderhouden
-2. **Testability:** ✅ Componenten kunnen individueel worden getest
-3. **Reusability:** ✅ Componenten kunnen worden hergebruikt
-4. **Readability:** ✅ Veel makkelijker te begrijpen
-5. **Performance:** ✅ Betere code splitting mogelijk
-6. **Type Safety:** ✅ Betere TypeScript support
-
----
-
-## 🎯 Priority Ranking
-
-1. **🔴 HIGH:** Extract icon mapping (quick win, grote impact)
-2. **🔴 HIGH:** Split AdminPanel component (grootste impact)
-3. **🟠 MEDIUM:** Remove debug logging (cleanup)
-4. **🟠 MEDIUM:** Extract tab buttons (reduce duplication)
-5. **🟡 LOW:** Extract constants (polish)
-
----
-
-## 📝 Implementation Notes
-
-- Start met icon mapping (snelste win)
-- Test elke fase voordat je verder gaat
-- Behoud backward compatibility tijdens refactoring
-- Documenteer nieuwe component interfaces
-- Update tests na refactoring
+See `REFACTORING_PLAN_ContentContext.md` for detailed refactoring plan.

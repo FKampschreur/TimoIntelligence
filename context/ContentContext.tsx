@@ -1,7 +1,17 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
-import { sanitizeInput, sanitizeUrl, LocalStorageEncryption } from '../utils/security';
-import { fetchContent, saveContent, SaveStatus } from '../utils/apiService';
-import { isApiAvailable } from '../utils/apiConfig';
+import { sanitizeInput, sanitizeUrl } from '../utils/security'; // Still used in updateSolution
+import { SaveStatus } from '../utils/apiService';
+import { agentLog } from '../utils/agentLogging';
+import { selectIconFromText } from '../utils/iconMapper';
+import { validateContentStructure } from './validators/contentValidator';
+import { ContentPersistenceService } from './services/ContentPersistenceService';
+import {
+  createContentUpdater,
+  HERO_FIELD_CONFIG,
+  ABOUT_FIELD_CONFIG,
+  PARTNERS_FIELD_CONFIG,
+  CONTACT_FIELD_CONFIG
+} from './hooks/useContentUpdater';
 
 
 export type IconName = 'Truck' | 'FileText' | 'BarChart3' | 'Users' | 'ImageIcon' | 'Zap' | 'Shield' | 'Globe' | 'Cpu' | 'Building' | 'Package' | 'Code' | 'Settings' | 'Database' | 'Cloud' | 'Lock' | 'Bell' | 'Mail' | 'Calendar' | 'Wallet' | 'ShoppingCart' | 'TrendingUp' | 'Target' | 'Puzzle';
@@ -35,11 +45,14 @@ export interface AboutData {
 
 export interface PartnersData {
   title: string;
+  subtitle: string;
   description: string;
   feature1Title: string;
   feature1Description: string;
   feature2Title: string;
   feature2Description: string;
+  feature3Title: string;
+  feature3Description: string;
 }
 
 export interface ContactData {
@@ -77,7 +90,7 @@ const defaultContent: ContentState = {
     tag: 'POWERED BY HOLLAND FOOD SERVICE',
     titleLine1: 'Intelligente Software.',
     titleLine2: 'Geboren in de Praktijk.',
-    description: 'Vanuit Holland Food Service en Timo Vastgoed ontwikkelden wij het ultieme AI-ecosysteem voor logistiek, vastgoed en procesoptimalisatie. Nu beschikbaar voor uw organisatie.',
+    description: 'Vanuit de unieke wisselwerking tussen Holland Food Service en de tech-specialisten van Timo Intelligente ontwikkelden wij het ultieme AI-ecosysteem. Geen software van een afstand, maar intelligentie direct uit de praktijk.\n\nOf het nu gaat om het MKB of complexe zorginstellingen: met Timo optimaliseert u niet alleen uw bedrijfsprocessen, u bent klaar voor de toekomst. Onze technologie, geboren op de werkvloer, is nu beschikbaar voor úw organisatie.',
     buttonPrimary: 'Bekijk onze oplossingen',
     buttonSecondary: 'Vraag demo aan'
   },
@@ -86,7 +99,7 @@ const defaultContent: ContentState = {
       id: 'fleet',
       title: 'Timo Fleet',
       subtitle: 'Voorheen EcoRoute',
-      description: 'Geavanceerd vlootbeheer gericht op maximale kostenreductie en CO2-besparing. Optimaliseer routes en reduceer brandstofverbruik in real-time.',
+      description: 'Real-time vlootoptimalisatie die CO2-uitstoot minimaliseert en efficiency maximaliseert. Wij bewijzen dat duurzaamheid en leverbetrouwbaarheid hand in hand gaan.',
       detailTitle: 'Strategisch Vlootbeheer',
       detailText: 'Timo Fleet is uw strategische partner voor modern transportmanagement. Gedreven door AI, gaat dit platform verder dan simpele routeplanning. Wij bieden realtime vlootbeheer, dynamische chauffeursroosters en intelligente kostenreductie.\n\nHet systeem maakt autonome afwegingen op basis van uw bedrijfsdata: is een tijdvenster-boete voordeliger dan een extra voertuig inzetten? Prioriteren we elektrisch rijden voor duurzaamheid? Timo Fleet navigeert niet alleen uw wagens, maar ook uw bedrijfsstrategie.',
       image: 'https://i.imgur.com/6ULyMKV.jpg',
@@ -96,9 +109,9 @@ const defaultContent: ContentState = {
       id: 'tender',
       title: 'Timo Tender',
       subtitle: 'Aanbesteding Intelligence',
-      description: 'AI-ondersteuning voor het analyseren en winnen van aanbestedingen. Beheer contractvereisten en genereer winnende voorstellen.',
-      detailTitle: 'Slimmer Inschrijven',
-      detailText: 'Analyseer razendsnel bestekdocumenten en genereer conceptantwoorden op basis van uw historische successen.',
+      description: 'Strategische kwaliteitsbewaking bij tenders. Timo analyseert uw uitvraag tot in de kern en daagt ons uit om de perfecte vertaalslag te maken naar uw wensen.',
+      detailTitle: 'De kritische kracht achter de perfecte match.',
+      detailText: 'Een aanbesteding win je niet met standaardantwoorden, maar met de beste oplossing. Timo Tender is onze exclusieve, interne challenger die het team van Holland Food Service scherp houdt.\n\nDeze module schrijft geen blindelings aanbod, maar fungeert als een intelligente kwaliteitsmanager. Timo analyseert uw uitvraag tot in de kern en toetst onze concepten genadeloos: Geven wij écht antwoord op de vraag van de zorgorganisatie? Is dit de beste versie van onszelf?\n\nDaarnaast scant Timo continu de markt op trends, sterktes en zwaktes. Hierdoor ontvangt u geen generiek verhaal, maar een doordacht voorstel dat feitelijk klopt, perfect aansluit op uw wensen en rekening houdt met de wereld van morgen.',
       image: 'https://i.imgur.com/BHQtcIb.jpg',
       iconName: 'FileText'
     },
@@ -106,9 +119,9 @@ const defaultContent: ContentState = {
       id: 'insights',
       title: 'Timo Insights',
       subtitle: 'Business Intelligence',
-      description: 'Real-time dashboarding voor grip op inkoop, voorraad en operationele processen. Van ruwe data naar strategische beslissingen.',
+      description: 'Volledige regie over uw keten. Stop met het managen van losse eilandjes. Timo verbindt inkoop, voorraad en financiën in één levend overzicht. Van de eerste bestelling tot de laatste factuur: u ziet direct hoe operationele details uw strategische doelen beïnvloeden.',
       detailTitle: 'Data Driven Decisions',
-      detailText: 'Koppel al uw databronnen en visualiseer uw KPI\'s in real-time. Van voorraadbeheer tot financiële prognoses.',
+      detailText: 'Van achteraf verklaren naar vooraf bijsturen. Stop met sturen in de achteruitkijkspiegel. Timo bundelt al uw stromen – van inkoop tot financiën – in één helder dashboard. Geen verrassingen achteraf, maar real-time grip op uw budgetten en processen.',
       image: 'https://i.imgur.com/j4wMdCZ.jpg',
       iconName: 'BarChart3'
     },
@@ -126,9 +139,9 @@ const defaultContent: ContentState = {
       id: 'vision',
       title: 'Timo Vision',
       subtitle: 'Beeldoptimalisatie',
-      description: 'Automatische verwerking en optimalisatie van productafbeeldingen voor webshops en catalogi. Consistentie en kwaliteit gegarandeerd.',
+      description: 'Uw assortiment, perfect in beeld. Transformeer ruw beeldmateriaal direct naar een strakke, uniforme webshop-ervaring. Timo zorgt volautomatisch voor vrijstaande beelden en consistente kwaliteit. Zodat uw producten de aandacht krijgen die ze verdienen.',
       detailTitle: 'Automated Imaging',
-      detailText: 'Laat AI uw productfotografie optimaliseren, vrijstaand maken en categoriseren voor e-commerce gebruik.',
+      detailText: 'Visuele perfectie, volledig geautomatiseerd. Uw assortiment verdient de beste presentatie. Timo Vision transformeert ruwe foto\'s direct naar professionele, vrijstaande e-commerce beelden. Het resultaat? Een uniforme, aantrekkelijke catalogus die de verkoop stimuleert, zonder dat er een fotograaf aan te pas komt.',
       image: 'https://i.imgur.com/tO0TYrR.jpg',
       iconName: 'ImageIcon'
     },
@@ -149,12 +162,15 @@ const defaultContent: ContentState = {
     imageSubcaption: 'De mensen achter Timo Intelligence'
   },
   partners: {
-    title: 'Voor Partners & Aanbestedingen',
-    description: 'Op zoek naar een technologiepartner die de taal van aanbestedingen spreekt? Kiest u voor Timo Intelligence, dan kiest u voor innovatiekracht en absolute leverzekerheid.',
-    feature1Title: 'Innovatiekracht',
-    feature1Description: 'Onderscheidend vermogen in EMVI plannen.',
-    feature2Title: 'ISO & Compliance',
-    feature2Description: 'Veiligheid en data-integriteit gewaarborgd.'
+    title: 'Partnerschap & Technologie',
+    subtitle: 'De stille kracht achter uw operatie.',
+    description: 'Op zoek naar een samenwerking die verder gaat dan alleen dozen schuiven? Kiest u voor Holland Food Service met Timo Intelligente, dan kiest u voor de perfecte balans tussen logistieke betrouwbaarheid en technologische vooruitgang. Wij bieden de zekerheid van een bewezen partner, met de innovatiekracht van een tech-pionier.',
+    feature1Title: 'Innovatiekracht & Continuïteit',
+    feature1Description: 'Stilstand is achteruitgang. Met Timo kiest u niet voor een statisch pakket, maar voor een platform dat continu meegroeit met de markt. Wij leveren tools die uw processen vandaag optimaliseren, en u voorbereiden op de uitdagingen van morgen.',
+    feature2Title: 'Future-Proof Architectuur',
+    feature2Description: 'Wij bouwen niet op verouderde servers, maar op een moderne, cloud-native infrastructuur. Voor uw organisatie betekent dit pure snelheid en betrouwbaarheid:\n\nMaximale Uptime: Dankzij ons \'Serverless\' platform (Edge Network) is de software altijd en overal razendsnel beschikbaar.\n\nReal-time Data: Wijzigingen zijn direct zichtbaar voor alle gebruikers. Geen vertraging, geen synchronisatiefouten.\n\nSchaalbaarheid: Of u nu 1.000 of 500.000 maaltijden verwerkt; onze architectuur groeit naadloos met u mee zonder prestatieverlies.',
+    feature3Title: 'ISO & Compliance',
+    feature3Description: 'In de zorg is dataheiligheid geen discussiepunt, maar een vereiste.\n\nSecurity by Design: Beveiliging zit in de kern van onze code, niet in een schil eromheen.\n\nAVG-Proof: Volledige encryptie van data en strikte scheiding van gegevensstromen.\n\nControleerbaar: Dankzij geautomatiseerde versiebeheer-systemen is elke wijziging in de software traceerbaar en transparant.'
   },
   contact: {
     title: 'Neem Contact Op',
@@ -189,7 +205,7 @@ const ContentContext = createContext<ContentContextType | undefined>(undefined);
 
 export const ContentProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // #region agent log
-  fetch('http://127.0.0.1:7245/ingest/73ac9368-5f22-431a-97d8-807ae4abf6aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ContentContext.tsx:100',message:'ContentProvider initializing',data:{solutionsCount:defaultContent.solutions.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+  agentLog('ContentContext.tsx:100', 'ContentProvider initializing', { solutionsCount: defaultContent.solutions.length });
   // #endregion
   
   // Save status state
@@ -202,109 +218,41 @@ export const ContentProvider: React.FC<{ children: ReactNode }> = ({ children })
   // Ref om te voorkomen dat we meerdere saves tegelijk doen
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitialLoadRef = useRef(true);
+  const isLoadingContentRef = useRef(false);
+  const isSavingRef = useRef(false);
 
-  // Load saved content from localStorage or use default
-  const loadSavedContentFromLocalStorage = (): ContentState => {
-    try {
-      const savedContent = localStorage.getItem('timo-intelligence-content');
-      if (savedContent) {
-        // Try to parse as JSON first (backward compatibility)
-        let parsed: any;
-        try {
-          parsed = JSON.parse(savedContent);
-        } catch (parseError) {
-          // If parsing fails, might be encrypted - try to decrypt asynchronously
-          // For now, return default and decrypt in useEffect
-          return defaultContent;
-        }
-        
-        // Validate that parsed content has the correct structure
-        if (parsed && typeof parsed === 'object') {
-          // Deep validation of structure
-          const isValid = (
-            parsed.hero && typeof parsed.hero === 'object' &&
-            Array.isArray(parsed.solutions) &&
-            parsed.about && typeof parsed.about === 'object' &&
-            parsed.partners && typeof parsed.partners === 'object' &&
-            parsed.contact && typeof parsed.contact === 'object'
-          );
-          
-          if (isValid) {
-            // Validate solutions array structure
-            const solutionsValid = parsed.solutions.every((sol: any) => 
-              sol && typeof sol === 'object' &&
-              typeof sol.id === 'string' &&
-              typeof sol.title === 'string' &&
-              typeof sol.subtitle === 'string' &&
-              typeof sol.description === 'string' &&
-              typeof sol.detailTitle === 'string' &&
-              typeof sol.detailText === 'string' &&
-              typeof sol.image === 'string' &&
-              typeof sol.iconName === 'string'
-            );
-            
-            if (solutionsValid) {
-              return parsed as ContentState;
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error loading saved content from localStorage:', error);
-    }
-    return defaultContent;
-  };
-
-  const [content, setContent] = useState<ContentState>(loadSavedContentFromLocalStorage);
+  // Initialize content with default (will be replaced by loadContent)
+  const [content, setContent] = useState<ContentState>(defaultContent);
   
-  // Load content from API on mount (if available), fallback to localStorage
+  // Load content from API or localStorage on mount
   useEffect(() => {
+    // Prevent concurrent loads
+    if (isLoadingContentRef.current) {
+      return;
+    }
+    
     const loadContent = async () => {
-      if (!isApiAvailable()) {
-        // API niet beschikbaar, gebruik localStorage
-        console.log('API niet geconfigureerd, gebruik localStorage');
-        return;
-      }
-
+      isLoadingContentRef.current = true;
+      setSaveStatus(prev => ({ ...prev, isSaving: true }));
+      
       try {
-        setSaveStatus(prev => ({ ...prev, isSaving: true }));
-        const response = await fetchContent();
-        
-        if (response.success && response.data) {
-          // Content succesvol opgehaald van API
-          setContent(response.data);
-          setSaveStatus({
-            isSaving: false,
-            lastSaved: new Date(),
-            error: null,
-          });
-          console.log('Content geladen van API');
-        } else {
-          // API geeft geen content terug, gebruik localStorage als fallback
-          console.log('Geen content op API, gebruik localStorage:', response.error);
-          const localContent = loadSavedContentFromLocalStorage();
-          if (localContent !== defaultContent) {
-            setContent(localContent);
-          }
-          setSaveStatus({
-            isSaving: false,
-            lastSaved: null,
-            error: null,
-          });
-        }
+        const loadedContent = await ContentPersistenceService.loadContent(defaultContent);
+        setContent(loadedContent);
+        setSaveStatus({
+          isSaving: false,
+          lastSaved: loadedContent !== defaultContent ? new Date() : null,
+          error: null,
+        });
       } catch (error) {
-        console.error('Error loading content from API:', error);
-        // Fallback naar localStorage
-        const localContent = loadSavedContentFromLocalStorage();
-        if (localContent !== defaultContent) {
-          setContent(localContent);
-        }
+        console.error('Error loading content:', error);
+        setContent(defaultContent);
         setSaveStatus({
           isSaving: false,
           lastSaved: null,
           error: null,
         });
       } finally {
+        isLoadingContentRef.current = false;
         isInitialLoadRef.current = false;
       }
     };
@@ -312,106 +260,51 @@ export const ContentProvider: React.FC<{ children: ReactNode }> = ({ children })
     loadContent();
   }, []);
 
-  // Try to decrypt encrypted content on mount (if needed) - alleen als API niet beschikbaar is
-  useEffect(() => {
-    if (isApiAvailable()) return; // Skip als API beschikbaar is
-    
-    const savedContent = localStorage.getItem('timo-intelligence-content');
-    if (savedContent && savedContent.length > 100 && /^[A-Za-z0-9+/=]+$/.test(savedContent)) {
-      // Looks like encrypted content, try to decrypt
-      LocalStorageEncryption.decrypt(savedContent).then(decrypted => {
-        try {
-          const parsed = JSON.parse(decrypted);
-          if (parsed && typeof parsed === 'object') {
-            setContent(parsed as ContentState);
-          }
-        } catch (error) {
-          console.warn('Failed to parse decrypted content:', error);
-        }
-      }).catch(error => {
-        console.warn('Decryption failed, using default content:', error);
-      });
-    }
-  }, []);
-
-  // Save content function - probeert eerst API, dan localStorage
+  // Save content function - uses ContentPersistenceService
   const persistContent = async (contentToSave: ContentState, showError = false) => {
+    // Prevent concurrent saves - use mutex pattern
+    if (isSavingRef.current) {
+      console.warn('Save already in progress, skipping duplicate save');
+      return;
+    }
+
     // Clear any pending save
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
     }
 
+    isSavingRef.current = true;
     setSaveStatus(prev => ({ ...prev, isSaving: true, error: null }));
 
-    let savedToApi = false;
-    let savedToLocalStorage = false;
-
-    // Try API first if available
-    if (isApiAvailable()) {
-      try {
-        const response = await saveContent(contentToSave);
-        if (response.success) {
-          savedToApi = true;
-          setSaveStatus({
-            isSaving: false,
-            lastSaved: new Date(),
-            error: null,
-          });
-        } else {
-          // API save failed, fallback to localStorage
-          console.warn('API save failed, falling back to localStorage:', response.error);
-          if (showError) {
-            setSaveStatus(prev => ({
-              ...prev,
-              isSaving: false,
-              error: `API opslag mislukt: ${response.error}. Opgeslagen in browser.`,
-            }));
-          }
-        }
-      } catch (error: any) {
-        console.error('Error saving to API:', error);
-        if (showError) {
-          setSaveStatus(prev => ({
-            ...prev,
-            isSaving: false,
-            error: `API fout: ${error.message}. Opgeslagen in browser.`,
-          }));
-        }
-      }
-    }
-
-    // Always save to localStorage as backup (and primary if API not available)
     try {
-      const contentString = JSON.stringify(contentToSave);
-      // Encrypt sensitive content before storing
-      const encrypted = await LocalStorageEncryption.encrypt(contentString);
-      localStorage.setItem('timo-intelligence-content', encrypted);
-      savedToLocalStorage = true;
+      const result = await ContentPersistenceService.saveContent(contentToSave, showError);
       
-      if (!savedToApi && !isApiAvailable()) {
-        // Only update status if we're using localStorage as primary
+      if (result.error && showError) {
+        const errorMessage = result.savedToLocalStorage
+          ? `API opslag mislukt: ${result.error}. Opgeslagen in browser.`
+          : result.error;
+        setSaveStatus(prev => ({
+          ...prev,
+          isSaving: false,
+          error: errorMessage,
+        }));
+      } else {
         setSaveStatus({
           isSaving: false,
           lastSaved: new Date(),
           error: null,
         });
-      } else if (!savedToApi && isApiAvailable()) {
-        // API failed but localStorage succeeded
-        setSaveStatus(prev => ({
-          ...prev,
-          isSaving: false,
-          lastSaved: new Date(),
-        }));
       }
     } catch (error: any) {
-      console.error('Error saving to localStorage:', error);
+      console.error('Error in persistContent:', error);
       setSaveStatus(prev => ({
         ...prev,
         isSaving: false,
-        error: prev.error || (error?.name === 'QuotaExceededError' || error?.code === 22
-          ? 'Opslagruimte vol. Uw wijzigingen kunnen niet worden opgeslagen.'
-          : 'Fout bij opslaan van wijzigingen.'),
+        error: showError ? (error?.message || 'Fout bij opslaan') : prev.error,
       }));
+    } finally {
+      isSavingRef.current = false;
     }
   };
 
@@ -425,16 +318,23 @@ export const ContentProvider: React.FC<{ children: ReactNode }> = ({ children })
     // Clear previous timeout
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
     }
 
     // Set new timeout
-    saveTimeoutRef.current = setTimeout(() => {
-      persistContent(content, false); // Don't show error on auto-save
+    const timeoutId = setTimeout(() => {
+      persistContent(content, false).catch(error => {
+        console.error('Error in debounced save:', error);
+      });
+      saveTimeoutRef.current = null;
     }, 500);
+    
+    saveTimeoutRef.current = timeoutId;
 
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
       }
     };
   }, [content]);
@@ -448,9 +348,14 @@ export const ContentProvider: React.FC<{ children: ReactNode }> = ({ children })
     setContent(newContent);
   };
 
+  // Create updater functions using the generic helper
+  const heroUpdater = createContentUpdater<ContentState['hero']>('hero', HERO_FIELD_CONFIG);
+  const aboutUpdater = createContentUpdater<AboutData>('about', ABOUT_FIELD_CONFIG);
+  const partnersUpdater = createContentUpdater<PartnersData>('partners', PARTNERS_FIELD_CONFIG);
+  const contactUpdater = createContentUpdater<ContactData>('contact', CONTACT_FIELD_CONFIG);
+
   const updateHero = (key: keyof ContentState['hero'], value: string) => {
-    // Sanitize input to prevent XSS
-    const sanitized = sanitizeInput(value, 5000);
+    const sanitized = heroUpdater(key, value);
     setContent(prev => ({
       ...prev,
       hero: {
@@ -497,55 +402,6 @@ export const ContentProvider: React.FC<{ children: ReactNode }> = ({ children })
     });
   };
 
-  // Function to intelligently select an icon based on text content
-  const selectIconFromText = (title: string, description: string): IconName => {
-    const text = `${title} ${description}`.toLowerCase();
-    
-    // Keyword matching for different categories
-    const iconKeywords: { [key in IconName]?: string[] } = {
-      Truck: ['vloot', 'fleet', 'transport', 'vervoer', 'voertuig', 'chauffeur', 'route', 'logistiek'],
-      FileText: ['aanbesteding', 'tender', 'document', 'contract', 'bestek', 'voorstel', 'rapport'],
-      BarChart3: ['insights', 'data', 'analytics', 'dashboard', 'kpi', 'statistiek', 'meting', 'rapportage'],
-      Users: ['medewerker', 'personeel', 'team', 'connect', 'rooster', 'verlof', 'hr', 'human'],
-      ImageIcon: ['beeld', 'image', 'foto', 'fotografie', 'visual', 'afbeelding', 'catalogus'],
-      Zap: ['energie', 'elektriciteit', 'snel', 'real-time', 'instant', 'power'],
-      Shield: ['security', 'veiligheid', 'bescherming', 'compliance', 'iso', 'certificering'],
-      Globe: ['web', 'internet', 'online', 'website', 'platform', 'cloud'],
-      Cpu: ['technologie', 'tech', 'software', 'systeem', 'platform', 'ai', 'intelligentie'],
-      Building: ['vastgoed', 'real estate', 'gebouw', 'faciliteit', 'property'],
-      Package: ['pakket', 'levering', 'voorraad', 'inventory', 'warehouse', 'opslag'],
-      Code: ['development', 'ontwikkeling', 'programmeren', 'api', 'integratie'],
-      Settings: ['configuratie', 'instellingen', 'beheer', 'management', 'admin'],
-      Database: ['database', 'data', 'opslag', 'storage', 'informatie'],
-      Cloud: ['cloud', 'saas', 'online', 'remote', 'hosting'],
-      Lock: ['beveiliging', 'security', 'encryptie', 'privacy', 'toegang'],
-      Bell: ['notificatie', 'alert', 'melding', 'waarschuwing', 'reminder'],
-      Mail: ['email', 'communicatie', 'contact', 'bericht', 'newsletter'],
-      Calendar: ['agenda', 'planning', 'afspraak', 'event', 'rooster'],
-      Wallet: ['financieel', 'betaling', 'factuur', 'accounting', 'geld'],
-      ShoppingCart: ['e-commerce', 'winkel', 'verkoop', 'order', 'bestelling'],
-      TrendingUp: ['groei', 'performance', 'resultaat', 'succes', 'verbetering'],
-      Target: ['doel', 'strategie', 'focus', 'planning', 'missie'],
-      Puzzle: ['integratie', 'connectie', 'ecosysteem', 'samenwerking', 'link']
-    };
-
-    // Score each icon based on keyword matches
-    const scores: { [key in IconName]?: number } = {};
-    
-    for (const [icon, keywords] of Object.entries(iconKeywords)) {
-      scores[icon as IconName] = keywords.reduce((score, keyword) => {
-        return score + (text.includes(keyword) ? 1 : 0);
-      }, 0);
-    }
-
-    // Find the icon with the highest score
-    const bestMatch = Object.entries(scores).reduce((best, [icon, score]) => {
-      return (score || 0) > (best.score || 0) ? { icon: icon as IconName, score: score || 0 } : best;
-    }, { icon: 'Cpu' as IconName, score: 0 });
-
-    // If no match found, default to Cpu (technology icon)
-    return bestMatch.score > 0 ? bestMatch.icon : 'Cpu';
-  };
 
   const addSolution = (onAdded?: (newIndex: number) => void) => {
     setContent(prev => {
@@ -586,9 +442,7 @@ export const ContentProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const updateAbout = (key: keyof AboutData, value: string) => {
-    // Sanitize input
-    const maxLength = key === 'imageUrl' ? 2000 : key.startsWith('paragraph') ? 5000 : 500;
-    const sanitized = key === 'imageUrl' ? sanitizeUrl(value) || value : sanitizeInput(value, maxLength);
+    const sanitized = aboutUpdater(key, value);
     setContent(prev => ({
       ...prev,
       about: {
@@ -599,9 +453,7 @@ export const ContentProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const updatePartners = (key: keyof PartnersData, value: string) => {
-    // Sanitize input
-    const maxLength = key === 'description' ? 2000 : 500;
-    const sanitized = sanitizeInput(value, maxLength);
+    const sanitized = partnersUpdater(key, value);
     setContent(prev => ({
       ...prev,
       partners: {
@@ -612,9 +464,7 @@ export const ContentProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const updateContact = (key: keyof ContactData, value: string) => {
-    // Sanitize input
-    const maxLength = key === 'introText' ? 2000 : 500;
-    const sanitized = sanitizeInput(value, maxLength);
+    const sanitized = contactUpdater(key, value);
     setContent(prev => ({
       ...prev,
       contact: {
@@ -647,11 +497,11 @@ export const ContentProvider: React.FC<{ children: ReactNode }> = ({ children })
 export const useContent = () => {
   const context = useContext(ContentContext);
   // #region agent log
-  fetch('http://127.0.0.1:7245/ingest/73ac9368-5f22-431a-97d8-807ae4abf6aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ContentContext.tsx:138',message:'useContent hook called',data:{hasContext:context!==undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+  agentLog('ContentContext.tsx:138', 'useContent hook called', { hasContext: context !== undefined });
   // #endregion
   if (context === undefined) {
     // #region agent log
-    fetch('http://127.0.0.1:7245/ingest/73ac9368-5f22-431a-97d8-807ae4abf6aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ContentContext.tsx:141',message:'useContent error: context undefined',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    agentLog('ContentContext.tsx:141', 'useContent error: context undefined');
     // #endregion
     throw new Error('useContent must be used within a ContentProvider');
   }

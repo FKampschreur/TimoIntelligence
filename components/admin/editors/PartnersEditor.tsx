@@ -22,6 +22,12 @@ export const PartnersEditor: React.FC<PartnersEditorProps> = ({ partners, update
       maxLength={INPUT_LIMITS.PARTNERS.DEFAULT}
       onChange={(v) => updatePartners('title', v)} 
     />
+    <InputGroup 
+      label="Subtitel" 
+      value={partners.subtitle}
+      maxLength={INPUT_LIMITS.PARTNERS.DEFAULT}
+      onChange={(v) => updatePartners('subtitle', v)} 
+    />
     <TextAreaGroup 
       label="Beschrijving" 
       value={partners.description}
@@ -31,30 +37,45 @@ export const PartnersEditor: React.FC<PartnersEditorProps> = ({ partners, update
     />
     
     <div className="pt-4 border-t border-white/5">
-      <p className="text-xs font-bold text-timo-accent mb-3 uppercase tracking-wider">Features</p>
+      <p className="text-xs font-bold text-timo-accent mb-3 uppercase tracking-wider">Onze Pijlers</p>
       <InputGroup 
-        label="Feature 1 Titel" 
+        label="Pijler 1 Titel" 
         value={partners.feature1Title}
         maxLength={INPUT_LIMITS.PARTNERS.DEFAULT}
         onChange={(v) => updatePartners('feature1Title', v)} 
       />
-      <InputGroup 
-        label="Feature 1 Beschrijving" 
+      <TextAreaGroup 
+        label="Pijler 1 Beschrijving" 
         value={partners.feature1Description}
-        maxLength={INPUT_LIMITS.PARTNERS.DEFAULT}
+        maxLength={INPUT_LIMITS.PARTNERS.DESCRIPTION}
         onChange={(v) => updatePartners('feature1Description', v)} 
+        rows={3}
       />
       <InputGroup 
-        label="Feature 2 Titel" 
+        label="Pijler 2 Titel" 
         value={partners.feature2Title}
         maxLength={INPUT_LIMITS.PARTNERS.DEFAULT}
         onChange={(v) => updatePartners('feature2Title', v)} 
       />
-      <InputGroup 
-        label="Feature 2 Beschrijving" 
+      <TextAreaGroup 
+        label="Pijler 2 Beschrijving (gebruik \\n voor nieuwe regels)" 
         value={partners.feature2Description}
-        maxLength={INPUT_LIMITS.PARTNERS.DEFAULT}
+        maxLength={INPUT_LIMITS.PARTNERS.DESCRIPTION}
         onChange={(v) => updatePartners('feature2Description', v)} 
+        rows={6}
+      />
+      <InputGroup 
+        label="Pijler 3 Titel" 
+        value={partners.feature3Title}
+        maxLength={INPUT_LIMITS.PARTNERS.DEFAULT}
+        onChange={(v) => updatePartners('feature3Title', v)} 
+      />
+      <TextAreaGroup 
+        label="Pijler 3 Beschrijving (gebruik \\n voor nieuwe regels)" 
+        value={partners.feature3Description}
+        maxLength={INPUT_LIMITS.PARTNERS.DESCRIPTION}
+        onChange={(v) => updatePartners('feature3Description', v)} 
+        rows={6}
       />
     </div>
   </div>

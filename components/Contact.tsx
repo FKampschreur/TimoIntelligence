@@ -5,6 +5,7 @@ import { sanitizeInput, validateEmail, validateLength, RateLimiter } from '../ut
 import { VALIDATION_CONSTANTS } from '../utils/constants';
 import { sendContactForm } from '../utils/apiService';
 import { isApiAvailable } from '../utils/apiConfig';
+import { agentLog } from '../utils/agentLogging';
 
 const Contact: React.FC = () => {
   const { content } = useContent();
@@ -13,7 +14,7 @@ const Contact: React.FC = () => {
   const [rateLimitError, setRateLimitError] = useState<string | null>(null);
   
   // #region agent log
-  fetch('http://127.0.0.1:7245/ingest/73ac9368-5f22-431a-97d8-807ae4abf6aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Contact.tsx:5',message:'Contact component rendering',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  agentLog('Contact.tsx:5', 'Contact component rendering');
   // #endregion
   
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -35,18 +36,27 @@ const Contact: React.FC = () => {
     setIsSubmitting(true);
     
     // #region agent log
-    fetch('http://127.0.0.1:7245/ingest/73ac9368-5f22-431a-97d8-807ae4abf6aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Contact.tsx:9',message:'Form submitted',data:{hasHandler:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    agentLog('Contact.tsx:9', 'Form submitted', { hasHandler: true });
     // #endregion
     
     const formData = new FormData(e.currentTarget);
     const data = Object.fromEntries(formData);
     
-    // Sanitize and validate form data
+    // Sanitize and validate form data with proper type guards
     const { CONTACT_FORM: FORM } = VALIDATION_CONSTANTS;
-    const firstName = sanitizeInput((data.firstName as string)?.trim() || '', FORM.NAME_MAX_LENGTH);
-    const lastName = sanitizeInput((data.lastName as string)?.trim() || '', FORM.NAME_MAX_LENGTH);
-    const email = (data.email as string)?.trim() || '';
-    const message = sanitizeInput((data.message as string)?.trim() || '', FORM.MESSAGE_MAX_LENGTH);
+    const firstName = sanitizeInput(
+      (typeof data.firstName === 'string' ? data.firstName : '').trim() || '', 
+      FORM.NAME_MAX_LENGTH
+    );
+    const lastName = sanitizeInput(
+      (typeof data.lastName === 'string' ? data.lastName : '').trim() || '', 
+      FORM.NAME_MAX_LENGTH
+    );
+    const email = (typeof data.email === 'string' ? data.email : '').trim() || '';
+    const message = sanitizeInput(
+      (typeof data.message === 'string' ? data.message : '').trim() || '', 
+      FORM.MESSAGE_MAX_LENGTH
+    );
     
     // Validation checks
     if (!validateLength(firstName, 1, FORM.NAME_MAX_LENGTH)) {
@@ -80,7 +90,7 @@ const Contact: React.FC = () => {
     }
     
     // #region agent log
-    fetch('http://127.0.0.1:7245/ingest/73ac9368-5f22-431a-97d8-807ae4abf6aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Contact.tsx:13',message:'Form data collected',data:{fields:Object.keys(data)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    agentLog('Contact.tsx:13', 'Form data collected', { fields: Object.keys(data) });
     // #endregion
     
     try {
@@ -112,28 +122,56 @@ const Contact: React.FC = () => {
       }
       
       // Fallback: Verstuur email via mailto link
-      const recipientEmail = 'f.kampschreur@hollandfoodservice.nl';
-      const subject = encodeURIComponent(`Contactformulier: ${firstName} ${lastName}`);
-      const body = encodeURIComponent(
-        `Beste,\n\n` +
-        `Er is een nieuw bericht ontvangen via het contactformulier:\n\n` +
-        `Naam: ${firstName} ${lastName}\n` +
-        `Email: ${email}\n\n` +
-        `Bericht:\n${message}\n\n` +
-        `---\n` +
-        `Dit bericht is automatisch gegenereerd vanuit het contactformulier op de website.`
-      );
-      
-      // Open email client met mailto link
-      const mailtoLink = `mailto:${recipientEmail}?subject=${subject}&body=${body}`;
-      window.location.href = mailtoLink;
-      
-      // Reset form
-      e.currentTarget.reset();
-      setRateLimitError(null);
-      
-      // Toon bevestiging
-      alert('Bedankt voor uw bericht! Uw email client wordt geopend om het bericht te versturen.');
+      try {
+        const recipientEmail = 'f.kampschreur@hollandfoodservice.nl';
+        const subject = encodeURIComponent(`Contactformulier: ${firstName} ${lastName}`);
+        const body = encodeURIComponent(
+          `Beste,\n\n` +
+          `Er is een nieuw bericht ontvangen via het contactformulier:\n\n` +
+          `Naam: ${firstName} ${lastName}\n` +
+          `Email: ${email}\n\n` +
+          `Bericht:\n${message}\n\n` +
+          `---\n` +
+          `Dit bericht is automatisch gegenereerd vanuit het contactformulier op de website.`
+        );
+        
+        // Open email client met mailto link
+        const mailtoLink = `mailto:${recipientEmail}?subject=${subject}&body=${body}`;
+        
+        // Check if mailto is supported
+        if (mailtoLink.length > 2000) {
+          // Some browsers have URL length limits
+          console.warn('Mailto link too long, truncating body');
+          const truncatedBody = encodeURIComponent(
+            `Beste,\n\n` +
+            `Er is een nieuw bericht ontvangen via het contactformulier.\n\n` +
+            `Naam: ${firstName} ${lastName}\n` +
+            `Email: ${email}\n\n` +
+            `Bericht: ${message.substring(0, 500)}${message.length > 500 ? '...' : ''}`
+          );
+          window.location.href = `mailto:${recipientEmail}?subject=${subject}&body=${truncatedBody}`;
+        } else {
+          window.location.href = mailtoLink;
+        }
+        
+        // Reset form
+        e.currentTarget.reset();
+        setRateLimitError(null);
+        
+        // Toon bevestiging
+        alert('Bedankt voor uw bericht! Uw email client wordt geopend om het bericht te versturen.');
+      } catch (mailtoError) {
+        console.error('Error opening mailto link:', mailtoError);
+        // Fallback: show email address and message
+        alert(
+          `Bedankt voor uw bericht!\n\n` +
+          `Uw email client kon niet automatisch worden geopend.\n\n` +
+          `Stuur uw bericht handmatig naar: f.kampschreur@hollandfoodservice.nl\n\n` +
+          `Onderwerp: Contactformulier: ${firstName} ${lastName}`
+        );
+        e.currentTarget.reset();
+        setRateLimitError(null);
+      }
     } catch (error) {
       // Log error without exposing user data
       console.error('Error submitting form:', error instanceof Error ? error.message : 'Unknown error');

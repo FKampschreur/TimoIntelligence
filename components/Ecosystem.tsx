@@ -60,7 +60,7 @@ const Ecosystem: React.FC = () => {
         <div className="text-center mb-20">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Eén Geïntegreerd Ecosysteem</h2>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            Geen losse tooltjes, maar een volledig gesynchroniseerde data-omgeving. Onze apps worden gevoed door één "Single Source of Truth".
+            Geen lappendeken van losse applicaties, maar een volledig gesynchroniseerde data-omgeving. Onze apps worden real-time gevoed door één centrale intelligentie: de "Single Source of Truth". Wijzigt u iets in de inkoop? Dan is het direct verwerkt in uw logistiek en financiën.
           </p>
         </div>
 

@@ -77,6 +77,65 @@ export const getIconComponentWithProps = (
 };
 
 /**
+ * Icon keyword mapping for intelligent icon selection
+ * Extracted from ContentContext to improve organization
+ */
+export const ICON_KEYWORDS: { [key in IconName]: string[] } = {
+  Truck: ['vloot', 'fleet', 'transport', 'vervoer', 'voertuig', 'chauffeur', 'route', 'logistiek'],
+  FileText: ['aanbesteding', 'tender', 'document', 'contract', 'bestek', 'voorstel', 'rapport'],
+  BarChart3: ['insights', 'data', 'analytics', 'dashboard', 'kpi', 'statistiek', 'meting', 'rapportage'],
+  Users: ['medewerker', 'personeel', 'team', 'connect', 'rooster', 'verlof', 'hr', 'human'],
+  ImageIcon: ['beeld', 'image', 'foto', 'fotografie', 'visual', 'afbeelding', 'catalogus'],
+  Zap: ['energie', 'elektriciteit', 'snel', 'real-time', 'instant', 'power'],
+  Shield: ['security', 'veiligheid', 'bescherming', 'compliance', 'iso', 'certificering'],
+  Globe: ['web', 'internet', 'online', 'website', 'platform', 'cloud'],
+  Cpu: ['technologie', 'tech', 'software', 'systeem', 'platform', 'ai', 'intelligentie'],
+  Building: ['vastgoed', 'real estate', 'gebouw', 'faciliteit', 'property'],
+  Package: ['pakket', 'levering', 'voorraad', 'inventory', 'warehouse', 'opslag'],
+  Code: ['development', 'ontwikkeling', 'programmeren', 'api', 'integratie'],
+  Settings: ['configuratie', 'instellingen', 'beheer', 'management', 'admin'],
+  Database: ['database', 'data', 'opslag', 'storage', 'informatie'],
+  Cloud: ['cloud', 'saas', 'online', 'remote', 'hosting'],
+  Lock: ['beveiliging', 'security', 'encryptie', 'privacy', 'toegang'],
+  Bell: ['notificatie', 'alert', 'melding', 'waarschuwing', 'reminder'],
+  Mail: ['email', 'communicatie', 'contact', 'bericht', 'newsletter'],
+  Calendar: ['agenda', 'planning', 'afspraak', 'event', 'rooster'],
+  Wallet: ['financieel', 'betaling', 'factuur', 'accounting', 'geld'],
+  ShoppingCart: ['e-commerce', 'winkel', 'verkoop', 'order', 'bestelling'],
+  TrendingUp: ['groei', 'performance', 'resultaat', 'succes', 'verbetering'],
+  Target: ['doel', 'strategie', 'focus', 'planning', 'missie'],
+  Puzzle: ['integratie', 'connectie', 'ecosysteem', 'samenwerking', 'link']
+};
+
+/**
+ * Intelligently select an icon based on text content
+ * Uses keyword matching to score and select the best icon
+ * Extracted from ContentContext.tsx
+ */
+export function selectIconFromText(title: string, description: string): IconName {
+  const text = `${title} ${description}`.toLowerCase();
+  
+  // Score each icon based on keyword matches
+  const scores: { [key in IconName]?: number } = {};
+  
+  for (const [icon, keywords] of Object.entries(ICON_KEYWORDS)) {
+    scores[icon as IconName] = keywords.reduce((score, keyword) => {
+      return score + (text.includes(keyword) ? 1 : 0);
+    }, 0);
+  }
+
+  // Find the icon with the highest score
+  const bestMatch = Object.entries(scores).reduce((best, [icon, score]) => {
+    return (score || 0) > (best.score || 0) 
+      ? { icon: icon as IconName, score: score || 0 } 
+      : best;
+  }, { icon: 'Cpu' as IconName, score: 0 });
+
+  // If no match found, default to Cpu (technology icon)
+  return bestMatch.score > 0 ? bestMatch.icon : 'Cpu';
+}
+
+/**
  * All available icon options for select dropdowns
  */
 export const getAllIconOptions = (): Array<{ value: IconName; label: string; emoji: string }> => [

@@ -39,8 +39,25 @@ const Solutions: React.FC = () => {
                     src={item.image || 'https://via.placeholder.com/600x400'} 
                     alt={item.title || 'Solution'} 
                     className="w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700 grayscale group-hover:grayscale-0"
-                    onError={(e) => handleImageError(e, item.image, `Solutions grid for "${item.title}"`)}
-                    onLoad={() => handleImageLoad(item.image, 'Solutions grid')}
+                    onError={(e) => {
+                      try {
+                        handleImageError(e, item.image, `Solutions grid for "${item.title}"`);
+                      } catch (error) {
+                        console.error('Error in image error handler:', error);
+                        // Fallback: set placeholder image
+                        const target = e.target as HTMLImageElement;
+                        if (target) {
+                          target.src = 'https://via.placeholder.com/600x400';
+                        }
+                      }
+                    }}
+                    onLoad={() => {
+                      try {
+                        handleImageLoad(item.image, 'Solutions grid');
+                      } catch (error) {
+                        console.error('Error in image load handler:', error);
+                      }
+                    }}
                   />
               </div>
 
