@@ -7,23 +7,44 @@ interface ChatWidgetProps {
   apiUrl?: string;
 }
 
+// Get API URL from environment or use default
+const getChatApiUrl = (): string => {
+  // Check for environment variable first
+  if (import.meta.env.VITE_CHAT_API_URL) {
+    return import.meta.env.VITE_CHAT_API_URL;
+  }
+  // Fallback to localhost for development
+  return 'http://localhost:3001/api/chat';
+};
+
 const ChatWidget: React.FC<ChatWidgetProps> = ({ 
-  apiUrl = 'http://localhost:3001/api/chat' 
+  apiUrl 
 }) => {
+  // Use provided apiUrl, or get from environment, or use default
+  const chatApiUrl = apiUrl || getChatApiUrl();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  const { messages, sendMessage, isLoading, error } = useChat({
+  const { messages, sendMessage, status, error } = useChat({
     transport: new DefaultChatTransport({
-      api: apiUrl,
+      api: chatApiUrl,
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'omit',
     }),
     onError: (error) => {
       console.error('Chat error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+        cause: error.cause,
+        ...error
+      });
+      
       // Show user-friendly error message
       const errorMessage = error.message || String(error);
       if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError') || errorMessage.includes('ERR_CONNECTION_REFUSED')) {
@@ -33,19 +54,45 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       } else if (errorMessage.includes('API key') || errorMessage.includes('500')) {
         console.error('❌ API key probleem of server error.');
         console.error('   Controleer:');
-        console.error('   1. Is GOOGLE_API_KEY ingesteld in .env.local?');
+        console.error('   1. Is GEMINI_API_KEY ingesteld in .env.local?');
         console.error('   2. Draait de backend server? (check terminal)');
         console.error('   3. Run: npm run test:chat om te testen');
+      } else {
+        console.error('❌ Onbekende chat error.');
+        console.error('   Controleer de browser console en server logs voor meer details.');
+        console.error('   API URL:', chatApiUrl);
       }
     },
   });
+
+  // Check if loading (submitted or streaming)
+  const isLoading = status === 'submitted' || status === 'streaming';
+
+  // Helper function to get text content from message parts
+  const getMessageText = (message: typeof messages[0]): string => {
+    if ('parts' in message && Array.isArray(message.parts)) {
+      return message.parts
+        .filter((part: any) => part.type === 'text')
+        .map((part: any) => part.text)
+        .join('');
+    }
+    // Fallback for older format or direct text
+    if ('text' in message) {
+      return message.text as string;
+    }
+    if ('content' in message) {
+      return message.content as string;
+    }
+    return '';
+  };
 
   // Handle form submission
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
     
-    sendMessage({ content: input });
+    // AI SDK v3 - sendMessage accepts text directly
+    sendMessage({ text: input });
     setInput(''); // Clear input after sending
   };
 
@@ -68,21 +115,24 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       // Verwijder het codewoord voor display
       const cleanContent = messageContent.replace(/\[ACTION_EMAIL\]/g, '').trim();
       
-              // Genereer email body met gesprekscontext
-              const conversationContext = messages
-                .map(msg => `${msg.role === 'user' ? 'Gebruiker' : 'Assistent'}: ${msg.content.replace(/\[ACTION_EMAIL\]/g, '')}`)
-                .join('\n\n');
+      // Genereer email body met gesprekscontext
+      const conversationContext = messages
+        .map(msg => {
+          const msgText = getMessageText(msg);
+          return `${msg.role === 'user' ? 'Gebruiker' : 'Assistent'}: ${msgText.replace(/\[ACTION_EMAIL\]/g, '')}`;
+        })
+        .join('\n\n');
       
       const emailBody = encodeURIComponent(
-        `Beste Holland Food Service team,\n\n` +
-        `Ik heb interesse in Timo. Hieronder staat het gesprek dat ik met Timo heb gevoerd:\n\n` +
+        `Beste Timo Intelligence team,\n\n` +
+        `Ik heb interesse in Timo Intelligence. Hieronder staat het gesprek dat ik met Timo heb gevoerd:\n\n` +
         `${conversationContext}\n\n` +
         `Graag zou ik meer informatie willen ontvangen.\n\n` +
         `Met vriendelijke groet`
       );
       
-      const emailSubject = encodeURIComponent('Aanvraag via Timo Chatbot');
-      const mailtoLink = `mailto:info@hollandfoodservice.nl?subject=${emailSubject}&body=${emailBody}`;
+      const emailSubject = encodeURIComponent('Aanvraag via Timo Intelligence Website');
+      const mailtoLink = `mailto:info@timointelligence.nl?subject=${emailSubject}&body=${emailBody}`;
       
       return { cleanContent, mailtoLink };
     }
@@ -118,7 +168,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
               </div>
               <div>
                 <h3 className="text-white font-semibold">Timo</h3>
-                <p className="text-xs text-gray-400">Holland Food Service - Ik help je graag verder</p>
+                <p className="text-xs text-gray-400">Timo Intelligence - Ik help je graag verder</p>
               </div>
             </div>
             <button
@@ -135,7 +185,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
             {messages.length === 0 && !error && (
               <div className="text-center text-gray-400 py-8">
                 <MessageCircle className="w-12 h-12 mx-auto mb-3 text-timo-accent/50" />
-                <p className="text-sm">Hallo! Ik ben Timo, het digitale brein van Holland Food Service.</p>
+                <p className="text-sm">Hallo! Ik ben Timo, het intelligente digitale brein van Timo Intelligence.</p>
                 <p className="text-xs mt-2 text-gray-500">Hoe kan ik je helpen vandaag?</p>
               </div>
             )}
@@ -147,17 +197,18 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                   {error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')
                     ? 'Kan niet verbinden met chat server. Zorg dat de backend server draait (npm run server)'
                     : error.message?.includes('API key')
-                    ? 'API key probleem. Controleer GOOGLE_API_KEY in .env.local'
+                    ? 'API key probleem. Controleer GEMINI_API_KEY in .env.local'
                     : 'Er is een fout opgetreden. Probeer het opnieuw.'}
                 </p>
               </div>
             )}
 
             {messages.map((message) => {
-              const emailAction = getEmailAction(message.content);
+              const messageText = getMessageText(message);
+              const emailAction = getEmailAction(messageText);
               const displayContent = emailAction 
                 ? emailAction.cleanContent 
-                : message.content;
+                : messageText;
 
               return (
                 <div

@@ -14,13 +14,13 @@ Deze chat widget gebruikt Google Gemini AI via de Google AI Studio API om bezoek
 Maak een `.env.local` bestand in de root van het project met de volgende inhoud:
 
 ```env
-GOOGLE_API_KEY=AIzaSyC0SFihSEpIzKtC_N00uwGsw22S7OQ8lzQ
+GEMINI_API_KEY=AIzaSyC0SFihSEpIzKtC_N00uwGsw22S7OQ8lzQ
 PORT=3001
 VITE_DEV_URL=http://localhost:3000
 ```
 
 **BELANGRIJK:** 
-- De variabele moet `GOOGLE_API_KEY` heten (NIET `GEMINI_API_KEY`)
+- De variabele moet `GEMINI_API_KEY` heten
 - Geen spaties rond de `=`
 - Geen quotes nodig
 
@@ -108,7 +108,7 @@ Health check endpoint.
 
 ### Chat werkt niet
 1. Check of beide servers draaien (frontend op 3000, backend op 3001)
-2. Controleer of `GOOGLE_API_KEY` correct is ingesteld in `.env`
+2. Controleer of `GEMINI_API_KEY` correct is ingesteld in `.env.local` of `.env`
 3. Check de browser console voor errors
 4. Check de backend server logs voor API errors
 
@@ -116,6 +116,7 @@ Health check endpoint.
 Zorg ervoor dat `VITE_DEV_URL` in `.env` overeenkomt met je frontend URL.
 
 ### API Key Errors
+- Controleer of `GEMINI_API_KEY` correct is ingesteld in `.env.local` of `.env`
 - Controleer of je API key geldig is
 - Zorg dat je API key niet is beperkt tot specifieke IP's
 - Check of je quota niet is overschreden op Google AI Studio
@@ -123,7 +124,7 @@ Zorg ervoor dat `VITE_DEV_URL` in `.env` overeenkomt met je frontend URL.
 ## Productie Deployment
 
 Voor productie:
-1. Stel `GOOGLE_API_KEY` in als environment variable op je hosting platform
+1. Stel `GEMINI_API_KEY` in als environment variable op je hosting platform
 2. Update `VITE_DEV_URL` naar je productie frontend URL
 3. Zorg dat de backend server bereikbaar is vanaf je frontend domain
 4. Configureer CORS correct voor je productie domain

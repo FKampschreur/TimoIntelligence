@@ -16,11 +16,47 @@ VITE_API_BASE_URL=http://localhost:3001/api
 - Applicatie gebruikt automatisch localStorage (browser opslag)
 - Content wordt alleen lokaal opgeslagen
 
+## 💬 Chat Widget API
+
+Voor de chatbot functionaliteit:
+
+```env
+# Chat API endpoint (OPTIONEEL - gebruikt default localhost:3001 in development)
+VITE_CHAT_API_URL=http://localhost:3001/api/chat
+
+# Backend server configuratie (voor server/index.js) - VERPLICHT voor chatbot
+GEMINI_API_KEY=your_google_api_key_here
+PORT=3001
+VITE_DEV_URL=http://localhost:3000
+```
+
+**BELANGRIJK:** 
+- De backend server gebruikt `GEMINI_API_KEY`
+- Dit is een Express server, geen Next.js API route
+- De server code staat in `server/index.js`
+
+**Wanneer nodig:**
+- Als je de chatbot wilt gebruiken
+- Als je een andere backend URL gebruikt dan localhost:3001
+
+**Als niet ingesteld:**
+- Chat widget gebruikt automatisch `http://localhost:3001/api/chat` in development
+- In production moet je `VITE_CHAT_API_URL` instellen naar je productie backend URL
+- Zonder `GEMINI_API_KEY` werkt de chatbot niet
+
 ## 📝 Voorbeeld .env.local
 
 ```env
 # Backend API (OPTIONEEL - alleen als je backend server gebruikt)
 # VITE_API_BASE_URL=http://localhost:3001/api
+
+# Chat Widget API (OPTIONEEL - alleen als je andere URL gebruikt)
+# VITE_CHAT_API_URL=http://localhost:3001/api/chat
+
+# Backend server configuratie (VERPLICHT voor chatbot)
+GEMINI_API_KEY=your_google_api_key_here
+PORT=3001
+VITE_DEV_URL=http://localhost:3000
 ```
 
-**Opmerking:** Voor lokale ontwikkeling is geen `.env.local` bestand nodig. De applicatie werkt direct zonder configuratie.
+**Opmerking:** Voor lokale ontwikkeling is alleen `GEMINI_API_KEY` nodig voor de chatbot. De andere variabelen zijn optioneel.

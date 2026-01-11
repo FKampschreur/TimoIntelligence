@@ -42,21 +42,21 @@ if (existsSync(envLocalPath)) {
 } else {
   console.log('   ❌ Geen .env.local of .env bestand gevonden!');
   console.log('      Maak een .env.local bestand aan met:');
-  console.log('      GOOGLE_API_KEY=your_api_key_here');
+  console.log('      GEMINI_API_KEY=your_api_key_here');
   console.log('      PORT=3001');
   process.exit(1);
 }
 
-// Check 2: Is GOOGLE_API_KEY ingesteld?
-console.log('\n2️⃣  Controleren GOOGLE_API_KEY...');
-const apiKeyMatch = envContent.match(/GOOGLE_API_KEY\s*=\s*(.+)/);
-const geminiKeyMatch = envContent.match(/GEMINI_API_KEY\s*=\s*(.+)/);
+// Check 2: Is GEMINI_API_KEY ingesteld?
+console.log('\n2️⃣  Controleren GEMINI_API_KEY...');
+const apiKeyMatch = envContent.match(/GEMINI_API_KEY\s*=\s*(.+)/);
+const googleKeyMatch = envContent.match(/GOOGLE_API_KEY\s*=\s*(.+)/);
 
-if (geminiKeyMatch && !apiKeyMatch) {
-  console.log('   ⚠️  GEMINI_API_KEY gevonden, maar backend verwacht GOOGLE_API_KEY!');
-  console.log('   🔧 Oplossing: Verander GEMINI_API_KEY naar GOOGLE_API_KEY in je .env.local');
-  const geminiKey = geminiKeyMatch[1].trim();
-  console.log(`   📝 Gevonden key: ${geminiKey.substring(0, 10)}...`);
+if (googleKeyMatch && !apiKeyMatch) {
+  console.log('   ⚠️  GOOGLE_API_KEY gevonden, maar backend verwacht GEMINI_API_KEY!');
+  console.log('   🔧 Oplossing: Verander GOOGLE_API_KEY naar GEMINI_API_KEY in je .env.local');
+  const googleKey = googleKeyMatch[1].trim();
+  console.log(`   📝 Gevonden key: ${googleKey.substring(0, 10)}...`);
   console.log('\n   ❌ Backend kan deze key niet lezen omdat de naam verkeerd is!');
   process.exit(1);
 }
@@ -64,19 +64,19 @@ if (geminiKeyMatch && !apiKeyMatch) {
 if (apiKeyMatch) {
   const apiKey = apiKeyMatch[1].trim();
   if (apiKey && apiKey !== 'your_google_api_key_here' && apiKey.length > 10) {
-    console.log('   ✅ GOOGLE_API_KEY is ingesteld');
+    console.log('   ✅ GEMINI_API_KEY is ingesteld');
     console.log(`   📝 Key lengte: ${apiKey.length} karakters`);
     console.log(`   📝 Key preview: ${apiKey.substring(0, 10)}...`);
   } else {
-    console.log('   ❌ GOOGLE_API_KEY is niet correct ingesteld!');
+    console.log('   ❌ GEMINI_API_KEY is niet correct ingesteld!');
     console.log('      Zorg dat je een geldige Google API key hebt ingevuld');
     process.exit(1);
   }
 } else {
-  console.log('   ❌ GOOGLE_API_KEY niet gevonden in', envFile);
-  console.log('      Voeg toe: GOOGLE_API_KEY=your_api_key_here');
-  if (geminiKeyMatch) {
-    console.log('      (Je hebt GEMINI_API_KEY gebruikt, maar het moet GOOGLE_API_KEY zijn)');
+  console.log('   ❌ GEMINI_API_KEY niet gevonden in', envFile);
+  console.log('      Voeg toe: GEMINI_API_KEY=your_api_key_here');
+  if (googleKeyMatch) {
+    console.log('      (Je hebt GOOGLE_API_KEY gebruikt, maar het moet GEMINI_API_KEY zijn)');
   }
   process.exit(1);
 }
@@ -130,10 +130,10 @@ try {
 
   if (testResponse.status === 500) {
     const errorData = await testResponse.json();
-    if (errorData.error === 'API key not configured') {
-      console.log('   ❌ API key probleem!');
-      console.log('      De backend server kan de GOOGLE_API_KEY niet lezen');
-      console.log('      Controleer je .env.local bestand');
+      if (errorData.error === 'API key not configured') {
+        console.log('   ❌ API key probleem!');
+        console.log('      De backend server kan de GEMINI_API_KEY niet lezen');
+        console.log('      Controleer je .env.local bestand');
     } else {
       console.log(`   ⚠️  Chat endpoint reageert met error: ${errorData.error}`);
     }

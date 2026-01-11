@@ -134,7 +134,7 @@
                         <div class="error">❌ Chat endpoint error (status: ${response.status})</div>
                         <pre>${JSON.stringify(errorData, null, 2)}</pre>
                         ${errorData.error === 'API key not configured' 
-                            ? '<div class="error">💡 API key probleem! Controleer GOOGLE_API_KEY in .env.local</div>'
+                            ? '<div class="error">💡 API key probleem! Controleer GEMINI_API_KEY in .env.local</div>'
                             : ''}
                     `;
                 }

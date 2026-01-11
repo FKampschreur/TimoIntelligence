@@ -53,9 +53,9 @@ app.use((req, res, next) => {
 // Log CORS configuratie
 console.log(`🌐 CORS configured for origin: ${process.env.VITE_DEV_URL || 'http://localhost:3000'}`);
 
-// System prompt voor Timo - Holland Food Service
+// System prompt voor Timo - Timo Intelligence
 const SYSTEM_PROMPT = `ROL EN IDENTITEIT
-Je bent Timo, het intelligente digitale brein van Holland Food Service. Je bent ontwikkeld vanuit de visie van Frank Kampschreur (4e generatie eigenaar).
+Je bent Timo, het intelligente digitale brein van Timo Intelligence. Je bent ontwikkeld vanuit de visie van Frank Kampschreur.
 
 JOUW MISSIE (DE 8+ STANDAARD)
 1. Tevredenheid: De tevreden medewerker en klant zijn de ruggengraat van de organisatie.
@@ -68,11 +68,17 @@ Je ondersteunt iedereen op de werkvloer.
 - Je bent de gids: Gebruikers lezen geen handleidingen. Jij helpt ze direct.
 
 HET AANBOD & PRIJSSTRATEGIE (ROI)
-1. Partners (HFS Klanten): GRATIS. HFS investeert in het partnerschap.
+1. Partners: GRATIS. Timo Intelligence investeert in het partnerschap.
 2. Externe Partijen:
    - Module: €20.000,-/jaar.
    - Full Suite: €100.000,-/jaar (inclusief toekomstige updates).
    - Mindset: Het is een investering in efficiency, geen kostenpost.
+
+TIMO INTELLIGENCE PRODUCTEN
+- Timo Fleet: Fleet management oplossing
+- Timo Tender: Tender management systeem
+- Timo Insights: Data analytics en inzichten
+- Timo Vision: Visuele analyse en monitoring
 
 HET GEDRAG (DE OUTLOOK TRIGGER)
 - Antwoord kort en behulpzaam.
@@ -87,6 +93,23 @@ BELANGRIJK:
 - Gebruik [ACTION_EMAIL] alleen bij de bovenstaande triggers (demo, offerte, integraties).
 - Wees vriendelijk, professioneel en behulpzaam, maar blijf kort en to the point.`;
 
+// Root route - API server info
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Timo Intelligence Chat API Server',
+    version: '2.0',
+    info: 'This is the API server. The frontend runs on port 3000.',
+    endpoints: {
+      health: 'GET /health',
+      chat: 'POST /api/chat',
+      routes: 'GET /api/routes',
+      test: 'POST /api/chat/test'
+    },
+    frontend: 'http://localhost:3000',
+    documentation: 'See CHAT_SETUP.md for usage instructions'
+  });
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'gemini-chat-api', version: '2.0' });
@@ -98,9 +121,30 @@ app.get('/api/routes', (req, res) => {
     routes: [
       'GET /health',
       'POST /api/chat',
-      'GET /api/routes'
+      'GET /api/routes',
+      'POST /api/chat/test'
     ],
     version: '2.0'
+  });
+});
+
+// Test endpoint voor chat (om request format te testen)
+app.post('/api/chat/test', (req, res) => {
+  console.log('\n🧪 TEST ENDPOINT CALLED');
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Body:', JSON.stringify(req.body, null, 2));
+  console.log('Body type:', typeof req.body);
+  console.log('Body keys:', Object.keys(req.body || {}));
+  
+  res.json({
+    success: true,
+    received: {
+      body: req.body,
+      headers: req.headers,
+      method: req.method,
+      url: req.url
+    },
+    message: 'Test endpoint werkt!'
   });
 });
 
@@ -113,6 +157,8 @@ app.post('/api/chat', async (req, res) => {
   console.log('URL:', req.url);
   console.log('Path:', req.path);
   console.log('Original URL:', req.originalUrl);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Body:', JSON.stringify(req.body, null, 2));
   console.log('═══════════════════════════════════════\n');
   
   try {
@@ -120,17 +166,23 @@ app.post('/api/chat', async (req, res) => {
 
     if (!messages || !Array.isArray(messages)) {
       console.error('❌ Invalid request: messages array missing');
-      return res.status(400).json({ error: 'Messages array is required' });
+      console.error('Request body:', req.body);
+      return res.status(400).json({ 
+        error: 'Messages array is required',
+        received: req.body 
+      });
     }
 
-    const apiKey = process.env.GOOGLE_API_KEY;
+    console.log(`✅ Received ${messages.length} message(s)`);
+
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      console.error('❌ GOOGLE_API_KEY is not set in environment variables');
-      console.error('   Zorg dat GOOGLE_API_KEY staat in .env.local of .env');
+      console.error('❌ GEMINI_API_KEY is not set in environment variables');
+      console.error('   Zorg dat GEMINI_API_KEY staat in .env.local of .env');
       console.error(`   Checked: ${envLocalPath} and ${envPath}`);
       return res.status(500).json({ 
         error: 'API key not configured',
-        message: 'GOOGLE_API_KEY moet worden ingesteld in .env.local of .env'
+        message: 'GEMINI_API_KEY moet worden ingesteld in .env.local of .env'
       });
     }
 
@@ -142,11 +194,32 @@ app.post('/api/chat', async (req, res) => {
     });
 
     // Converteer messages naar het juiste formaat voor Gemini
-    const formattedMessages = messages.map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'assistant',
-      content: msg.content,
-    }));
+    // AI SDK v3 gebruikt parts array, maar we moeten content string hebben voor Gemini
+    const formattedMessages = messages.map(msg => {
+      let content = '';
+      
+      // Check if message has parts array (AI SDK v3 format)
+      if (msg.parts && Array.isArray(msg.parts)) {
+        content = msg.parts
+          .filter(part => part.type === 'text')
+          .map(part => part.text)
+          .join('');
+      } 
+      // Fallback to content or text property
+      else if (msg.content) {
+        content = msg.content;
+      } else if (msg.text) {
+        content = msg.text;
+      }
+      
+      return {
+        role: msg.role === 'user' ? 'user' : 'assistant',
+        content: content,
+      };
+    });
 
+    console.log('🔄 Starting streamText...');
+    
     // Stream de response
     const result = await streamText({
       model,
@@ -156,8 +229,13 @@ app.post('/api/chat', async (req, res) => {
       maxTokens: 1000,
     });
 
+    console.log('✅ streamText completed, converting to response...');
+
     // Gebruik toDataStreamResponse() voor compatibiliteit met AI SDK
     const streamResponse = result.toDataStreamResponse();
+    
+    console.log('✅ Response created, status:', streamResponse.status);
+    console.log('Response headers:', Object.fromEntries(streamResponse.headers.entries()));
     
     // Forward de response headers
     for (const [key, value] of streamResponse.headers.entries()) {
@@ -171,36 +249,82 @@ app.post('/api/chat', async (req, res) => {
     if (streamResponse.body) {
       const reader = streamResponse.body.getReader();
       const decoder = new TextDecoder();
+      let chunkCount = 0;
 
       try {
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
+          if (done) {
+            console.log(`✅ Stream completed after ${chunkCount} chunks`);
+            break;
+          }
           
+          chunkCount++;
           const chunk = decoder.decode(value, { stream: true });
           res.write(chunk);
         }
       } catch (streamError) {
-        console.error('Stream error:', streamError);
+        console.error('❌ Stream error:', streamError);
+        console.error('Stream error stack:', streamError.stack);
         if (!res.headersSent) {
-          res.status(500).json({ error: 'Stream error' });
+          res.status(500).json({ 
+            error: 'Stream error',
+            message: streamError.message 
+          });
+        } else {
+          // Headers already sent, can't send JSON error
+          res.end();
         }
+        return;
       } finally {
         reader.releaseLock();
       }
+    } else {
+      console.warn('⚠️  No response body to stream');
     }
 
     res.end();
+    console.log('✅ Response sent successfully');
   } catch (error) {
     console.error('❌ Error in chat endpoint:', error);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
     console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      ...error
+    });
+    
     if (!res.headersSent) {
       res.status(500).json({ 
         error: 'Internal server error',
-        message: error.message 
+        message: error.message,
+        name: error.name
       });
+    } else {
+      // Headers already sent, try to end gracefully
+      res.end();
     }
   }
+});
+
+// Root route - API server info
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Timo Intelligence Chat API Server',
+    version: '2.0',
+    info: 'This is the API server. The frontend runs on port 3000.',
+    endpoints: {
+      health: 'GET /health',
+      chat: 'POST /api/chat',
+      routes: 'GET /api/routes',
+      test: 'POST /api/chat/test'
+    },
+    frontend: 'http://localhost:3000',
+    documentation: 'See CHAT_SETUP.md for usage instructions'
+  });
 });
 
 // 404 handler voor onbekende routes
@@ -214,15 +338,35 @@ app.use((req, res) => {
   console.log('Original URL:', req.originalUrl);
   console.log('═══════════════════════════════════════\n');
   
+  // Als het een GET request is naar de root, geef een vriendelijke boodschap
+  if (req.method === 'GET' && req.path === '/') {
+    return res.json({
+      message: 'Timo Intelligence Chat API Server',
+      version: '2.0',
+      info: 'This is the API server. The frontend runs on port 3000.',
+      endpoints: {
+        health: 'GET /health',
+        chat: 'POST /api/chat',
+        routes: 'GET /api/routes',
+        test: 'POST /api/chat/test'
+      },
+      frontend: 'http://localhost:3000',
+      documentation: 'See CHAT_SETUP.md for usage instructions'
+    });
+  }
+  
   res.status(404).json({ 
     error: 'Route not found',
     method: req.method,
     url: req.url,
     path: req.path,
+    info: 'This is the API server. The frontend runs on http://localhost:3000',
     availableRoutes: [
+      'GET /',
       'GET /health',
       'POST /api/chat',
-      'GET /api/routes'
+      'GET /api/routes',
+      'POST /api/chat/test'
     ],
     version: '2.0'
   });
@@ -236,18 +380,18 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🌐 CORS origin: ${process.env.VITE_DEV_URL || 'http://localhost:3000'}`);
   
   // Check if API key is configured
-  if (!process.env.GOOGLE_API_KEY) {
-    console.error('\n⚠️  WAARSCHUWING: GOOGLE_API_KEY is niet ingesteld!');
+  if (!process.env.GEMINI_API_KEY) {
+    console.error('\n⚠️  WAARSCHUWING: GEMINI_API_KEY is niet ingesteld!');
     console.error('   De chat functionaliteit zal niet werken.');
-    console.error('   Voeg GOOGLE_API_KEY toe aan .env.local of .env');
+    console.error('   Voeg GEMINI_API_KEY toe aan .env.local of .env');
     const envFile = existsSync(envLocalPath) ? '.env.local' : existsSync(envPath) ? '.env' : 'geen gevonden';
     console.error(`   Huidige .env bestand: ${envFile}`);
     console.error(`   Gecontroleerde paden:`);
     console.error(`   - ${envLocalPath}`);
     console.error(`   - ${envPath}\n`);
   } else {
-    const keyPreview = process.env.GOOGLE_API_KEY.substring(0, 10) + '...';
-    console.log(`✅ GOOGLE_API_KEY is geconfigureerd (${keyPreview})`);
+    const keyPreview = process.env.GEMINI_API_KEY.substring(0, 10) + '...';
+    console.log(`✅ GEMINI_API_KEY is geconfigureerd (${keyPreview})`);
   }
   
   console.log('\n💡 Test de backend met:');
