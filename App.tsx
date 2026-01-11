@@ -10,6 +10,7 @@ import Contact from './components/Contact';
 import Footer from './components/Footer';
 import AdminPanel from './components/AdminPanel';
 import ErrorBoundary from './components/ErrorBoundary';
+import ChatWidgetWrapper from './components/ChatWidgetWrapper';
 import { ContentProvider } from './context/ContentContext';
 import { agentLog } from './utils/agentLogging';
 
@@ -49,6 +50,9 @@ const App: React.FC = () => {
         
         {/* The Admin Settings Panel */}
         <AdminPanel />
+        
+        {/* Chat Widget */}
+        <ChatWidgetWrapper />
       </div>
     </ContentProvider>
     </ErrorBoundary>

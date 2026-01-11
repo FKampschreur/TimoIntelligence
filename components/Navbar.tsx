@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X, Box } from 'lucide-react';
+import { agentLog } from '../utils/agentLogging';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -7,11 +8,11 @@ const Navbar: React.FC = () => {
 
   useEffect(() => {
     // #region agent log
-    fetch('http://127.0.0.1:7245/ingest/73ac9368-5f22-431a-97d8-807ae4abf6aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Navbar.tsx:8',message:'Scroll listener setup',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    agentLog('Navbar.tsx:8', 'Scroll listener setup');
     // #endregion
     const handleScroll = () => {
       // #region agent log
-      fetch('http://127.0.0.1:7245/ingest/73ac9368-5f22-431a-97d8-807ae4abf6aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Navbar.tsx:11',message:'Scroll event fired',data:{scrollY:window.scrollY,scrolled:window.scrollY>50},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      agentLog('Navbar.tsx:11', 'Scroll event fired', { scrollY: window.scrollY, scrolled: window.scrollY > 50 });
       // #endregion
       setScrolled(window.scrollY > 50);
     };
@@ -21,7 +22,7 @@ const Navbar: React.FC = () => {
       window.addEventListener('scroll', handleScroll, { passive: true });
       return () => {
         // #region agent log
-        fetch('http://127.0.0.1:7245/ingest/73ac9368-5f22-431a-97d8-807ae4abf6aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Navbar.tsx:17',message:'Scroll listener cleanup',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        agentLog('Navbar.tsx:17', 'Scroll listener cleanup');
         // #endregion
         try {
           window.removeEventListener('scroll', handleScroll);
@@ -52,7 +53,7 @@ const Navbar: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex-shrink-0 flex items-center gap-2 cursor-pointer" onClick={() => {
             // #region agent log
-            fetch('http://127.0.0.1:7245/ingest/73ac9368-5f22-431a-97d8-807ae4abf6aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Navbar.tsx:33',message:'Logo clicked',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+            agentLog('Navbar.tsx:33', 'Logo clicked');
             // #endregion
             const target = document.querySelector('#home');
             if (target) {
@@ -76,7 +77,7 @@ const Navbar: React.FC = () => {
                   href={link.href}
                   onClick={(e) => {
                     // #region agent log
-                    fetch('http://127.0.0.1:7245/ingest/73ac9368-5f22-431a-97d8-807ae4abf6aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Navbar.tsx:48',message:'Nav link clicked',data:{href:link.href,hash:window.location.hash},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                    agentLog('Navbar.tsx:48', 'Nav link clicked', { href: link.href, hash: window.location.hash });
                     // #endregion
                     e.preventDefault();
                     const target = document.querySelector(link.href);
@@ -113,7 +114,7 @@ const Navbar: React.FC = () => {
                 href={link.href}
                 onClick={(e) => {
                   // #region agent log
-                  fetch('http://127.0.0.1:7245/ingest/73ac9368-5f22-431a-97d8-807ae4abf6aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Navbar.tsx:76',message:'Mobile nav link clicked',data:{href:link.href},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                    agentLog('Navbar.tsx:76', 'Mobile nav link clicked', { href: link.href });
                   // #endregion
                   e.preventDefault();
                   setIsOpen(false);

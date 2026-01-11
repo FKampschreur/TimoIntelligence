@@ -23,6 +23,13 @@ class ErrorBoundary extends Component<Props, State> {
     if (isDev && error.message.includes('ContentProvider')) {
       return null; // Don't set error state for StrictMode context errors
     }
+    
+    // Don't crash on decryption errors - these are handled gracefully by ContentPersistenceService
+    if (error.message.includes('Decryption') || error.message.includes('decrypt')) {
+      console.warn('Decryption error caught by ErrorBoundary (handled gracefully):', error.message);
+      return null; // Don't show error UI, let the app use default content
+    }
+    
     return { hasError: true, error };
   }
 
@@ -43,6 +50,12 @@ class ErrorBoundary extends Component<Props, State> {
       agentLog('ErrorBoundary.tsx:33', 'Ignoring StrictMode context error');
       // #endregion
       console.warn('StrictMode context error (ignored):', error.message);
+      return;
+    }
+    
+    // Don't log decryption errors as critical - they're handled gracefully
+    if (error.message.includes('Decryption') || error.message.includes('decrypt')) {
+      console.warn('Decryption error (handled gracefully, using default content):', error.message);
       return;
     }
     

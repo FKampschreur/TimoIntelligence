@@ -207,10 +207,17 @@ export class LocalStorageEncryption {
       const decoder = new TextDecoder();
       return decoder.decode(decrypted);
     } catch (error) {
-      console.error('Decryption error:', error);
-      // Throw error instead of returning encrypted data
-      // This prevents treating encrypted string as valid JSON
-      throw new Error(`Decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Log detailed error for debugging
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Decryption error:', errorMessage, error);
+      
+      // Throw a more descriptive error
+      const decryptionError = new Error(`Decryption failed: ${errorMessage}`);
+      // Add original error as cause if available
+      if (error instanceof Error) {
+        (decryptionError as any).cause = error;
+      }
+      throw decryptionError;
     }
   }
 }

@@ -6,17 +6,28 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "server": "node server/index.js",
+    "dev:all": "concurrently \"npm run dev\" \"npm run server\"",
+    "test:chat": "node scripts/test-chat-backend.js",
+    "check:server": "node scripts/check-server.js"
   },
   "dependencies": {
-    "react": "^19.2.3",
+    "@ai-sdk/google": "^3.0.6",
+    "@ai-sdk/react": "^3.0.29",
+    "ai": "^6.0.27",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "framer-motion": "^12.23.26",
     "lucide-react": "^0.562.0",
-    "react-dom": "^19.2.3",
-    "framer-motion": "^12.23.26"
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "concurrently": "^9.2.1",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Server Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test-section {
+            background: #262626;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        button {
+            background: #06b6d4;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0891b2;
+        }
+        .success {
+            color: #10b981;
+            margin-top: 10px;
+        }
+        .error {
+            color: #ef4444;
+            margin-top: 10px;
+        }
+        .info {
+            color: #06b6d4;
+            margin-top: 10px;
+        }
+        pre {
+            background: #000;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Backend Server Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Health Check</h2>
+        <button onclick="testHealth()">Test Health Endpoint</button>
+        <div id="health-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Chat Endpoint Test</h2>
+        <button onclick="testChat()">Test Chat Endpoint</button>
+        <div id="chat-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. CORS Test</h2>
+        <button onclick="testCORS()">Test CORS</button>
+        <div id="cors-result"></div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'http://localhost:3001';
+
+        async function testHealth() {
+            const resultDiv = document.getElementById('health-result');
+            resultDiv.innerHTML = '<div class="info">Testing...</div>';
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ Health check geslaagd!</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">❌ Health check gefaald (status: ${response.status})</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">❌ Kan niet verbinden met backend server!</div>
+                    <div class="error">Error: ${error.message}</div>
+                    <div class="info">💡 Zorg dat de backend server draait: npm run server</div>
+                `;
+            }
+        }
+
+        async function testChat() {
+            const resultDiv = document.getElementById('chat-result');
+            resultDiv.innerHTML = '<div class="info">Testing...</div>';
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        messages: [
+                            { role: 'user', content: 'Test bericht' }
+                        ]
+                    })
+                });
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ Chat endpoint werkt!</div>
+                        <div class="info">Response status: ${response.status}</div>
+                        <div class="info">Response headers: ${JSON.stringify([...response.headers.entries()])}</div>
+                    `;
+                } else {
+                    const errorData = await response.json();
+                    resultDiv.innerHTML = `
+                        <div class="error">❌ Chat endpoint error (status: ${response.status})</div>
+                        <pre>${JSON.stringify(errorData, null, 2)}</pre>
+                        ${errorData.error === 'API key not configured' 
+                            ? '<div class="error">💡 API key probleem! Controleer GOOGLE_API_KEY in .env.local</div>'
+                            : ''}
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">❌ Kan niet verbinden met chat endpoint!</div>
+                    <div class="error">Error: ${error.message}</div>
+                    <div class="info">💡 Controleer:</div>
+                    <ul>
+                        <li>Draait de backend server? (npm run server)</li>
+                        <li>Is poort 3001 vrij?</li>
+                        <li>Zijn er CORS problemen?</li>
+                    </ul>
+                `;
+            }
+        }
+
+        async function testCORS() {
+            const resultDiv = document.getElementById('cors-result');
+            resultDiv.innerHTML = '<div class="info">Testing...</div>';
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/health`, {
+                    method: 'OPTIONS',
+                });
+                
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers'),
+                };
+
+                resultDiv.innerHTML = `
+                    <div class="success">✅ CORS headers gevonden:</div>
+                    <pre>${JSON.stringify(corsHeaders, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">❌ CORS test gefaald</div>
+                    <div class="error">Error: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Auto-test on load
+        window.onload = () => {
+            testHealth();
+        };
+    </script>
+</body>
+</html>

@@ -214,20 +214,58 @@ export class ContentPersistenceService {
   private static async parseStoredContent(content: string): Promise<ContentState | null> {
     // Try to parse as JSON first (backward compatibility)
     try {
-      return JSON.parse(content);
+      const parsed = JSON.parse(content);
+      // Check if it's valid content structure (quick check)
+      if (parsed && typeof parsed === 'object' && parsed.hero) {
+        return parsed;
+      }
     } catch (parseError) {
-      // Might be encrypted, try to decrypt
-      if (content.length > 100 && /^[A-Za-z0-9+/=]+$/.test(content)) {
-        try {
-          const decrypted = await LocalStorageEncryption.decrypt(content);
-          return JSON.parse(decrypted);
+      // Not valid JSON, might be encrypted
+    }
+
+    // Might be encrypted, try to decrypt
+    // Only try if it looks like base64 encoded data
+    if (content.length > 100 && /^[A-Za-z0-9+/=]+$/.test(content)) {
+      try {
+        const decrypted = await LocalStorageEncryption.decrypt(content);
+        const parsed = JSON.parse(decrypted);
+        if (parsed && typeof parsed === 'object' && parsed.hero) {
+          return parsed;
+        }
         } catch (decryptError) {
-          console.warn('Failed to decrypt localStorage content:', decryptError);
+          // Decryption failed - this could mean:
+          // 1. Data is not encrypted (old format)
+          // 2. Encryption key changed (new session)
+          // 3. Data is corrupted
+          const errorMsg = decryptError instanceof Error ? decryptError.message : String(decryptError);
+          
+          // Only log warning, don't throw - gracefully fall back to default content
+          console.warn('Failed to decrypt localStorage content. This is normal if encryption key changed or data is old format. Error:', errorMsg);
+          
+          // Try to clear corrupted encrypted data to prevent future errors
+          try {
+            localStorage.removeItem(this.STORAGE_KEY);
+            console.log('Cleared potentially corrupted localStorage content. Will use default content.');
+          } catch (clearError) {
+            // Ignore clear errors - not critical
+            console.warn('Failed to clear localStorage (non-critical):', clearError);
+          }
+          
+          // Return null to use default content - don't throw error
           return null;
         }
-      }
-      return null;
     }
+    
+    // If we get here, content is neither valid JSON nor encrypted
+    // Clear it to prevent future errors
+    try {
+      localStorage.removeItem(this.STORAGE_KEY);
+      console.log('Cleared invalid localStorage content');
+    } catch (clearError) {
+      // Ignore clear errors
+    }
+    
+    return null;
   }
 
   /**
