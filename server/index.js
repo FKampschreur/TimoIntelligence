@@ -7,7 +7,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { google } from '@ai-sdk/google';
-import { streamText } from 'ai';
+import { streamText, pipeUIMessageStreamToResponse } from 'ai';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync } from 'fs';
@@ -119,6 +119,7 @@ app.get('/health', (req, res) => {
 app.get('/api/routes', (req, res) => {
   res.json({ 
     routes: [
+      'GET /',
       'GET /health',
       'POST /api/chat',
       'GET /api/routes',
@@ -175,21 +176,30 @@ app.post('/api/chat', async (req, res) => {
 
     console.log(`✅ Received ${messages.length} message(s)`);
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    // Check voor beide variabele namen (GEMINI_API_KEY of GOOGLE_GENERATIVE_AI_API_KEY)
+    let apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
     if (!apiKey) {
-      console.error('❌ GEMINI_API_KEY is not set in environment variables');
-      console.error('   Zorg dat GEMINI_API_KEY staat in .env.local of .env');
+      console.error('❌ API key is not set in environment variables');
+      console.error('   Zorg dat GEMINI_API_KEY of GOOGLE_GENERATIVE_AI_API_KEY staat in .env.local of .env');
       console.error(`   Checked: ${envLocalPath} and ${envPath}`);
       return res.status(500).json({ 
         error: 'API key not configured',
-        message: 'GEMINI_API_KEY moet worden ingesteld in .env.local of .env'
+        message: 'GEMINI_API_KEY of GOOGLE_GENERATIVE_AI_API_KEY moet worden ingesteld in .env.local of .env'
       });
+    }
+
+    // @ai-sdk/google verwacht GOOGLE_GENERATIVE_AI_API_KEY environment variable
+    // Zet deze als het nog niet bestaat maar GEMINI_API_KEY wel bestaat
+    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY && process.env.GEMINI_API_KEY) {
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY = process.env.GEMINI_API_KEY;
     }
 
     console.log(`✅ API key gevonden (${apiKey.substring(0, 10)}...)`);
 
     // Configureer het Gemini model
-    const model = google('gemini-1.5-flash', {
+    // @ai-sdk/google gebruikt GOOGLE_GENERATIVE_AI_API_KEY environment variable automatisch
+    // We kunnen het ook expliciet doorgeven via apiKey parameter
+    const model = google('gemini-3-flash-preview', {
       apiKey: apiKey,
     });
 
@@ -229,62 +239,16 @@ app.post('/api/chat', async (req, res) => {
       maxTokens: 1000,
     });
 
-    console.log('✅ streamText completed, converting to response...');
+    console.log('✅ streamText completed, piping to response...');
 
-    // Gebruik toDataStreamResponse() voor compatibiliteit met AI SDK
-    const streamResponse = result.toDataStreamResponse();
+    // Gebruik pipeUIMessageStreamToResponse() functie met result.toUIMessageStream() voor AI SDK v6
+    // Dit is de aanbevolen manier voor Express servers in AI SDK v6
+    pipeUIMessageStreamToResponse({
+      response: res,
+      stream: result.toUIMessageStream({ sendStart: false }),
+    });
     
-    console.log('✅ Response created, status:', streamResponse.status);
-    console.log('Response headers:', Object.fromEntries(streamResponse.headers.entries()));
-    
-    // Forward de response headers
-    for (const [key, value] of streamResponse.headers.entries()) {
-      res.setHeader(key, value);
-    }
-
-    // Set status code
-    res.status(streamResponse.status);
-
-    // Stream de response body
-    if (streamResponse.body) {
-      const reader = streamResponse.body.getReader();
-      const decoder = new TextDecoder();
-      let chunkCount = 0;
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            console.log(`✅ Stream completed after ${chunkCount} chunks`);
-            break;
-          }
-          
-          chunkCount++;
-          const chunk = decoder.decode(value, { stream: true });
-          res.write(chunk);
-        }
-      } catch (streamError) {
-        console.error('❌ Stream error:', streamError);
-        console.error('Stream error stack:', streamError.stack);
-        if (!res.headersSent) {
-          res.status(500).json({ 
-            error: 'Stream error',
-            message: streamError.message 
-          });
-        } else {
-          // Headers already sent, can't send JSON error
-          res.end();
-        }
-        return;
-      } finally {
-        reader.releaseLock();
-      }
-    } else {
-      console.warn('⚠️  No response body to stream');
-    }
-
-    res.end();
-    console.log('✅ Response sent successfully');
+    console.log('✅ Response streamed successfully');
   } catch (error) {
     console.error('❌ Error in chat endpoint:', error);
     console.error('Error name:', error.name);
@@ -308,23 +272,6 @@ app.post('/api/chat', async (req, res) => {
       res.end();
     }
   }
-});
-
-// Root route - API server info
-app.get('/', (req, res) => {
-  res.json({
-    message: 'Timo Intelligence Chat API Server',
-    version: '2.0',
-    info: 'This is the API server. The frontend runs on port 3000.',
-    endpoints: {
-      health: 'GET /health',
-      chat: 'POST /api/chat',
-      routes: 'GET /api/routes',
-      test: 'POST /api/chat/test'
-    },
-    frontend: 'http://localhost:3000',
-    documentation: 'See CHAT_SETUP.md for usage instructions'
-  });
 });
 
 // 404 handler voor onbekende routes
@@ -379,19 +326,21 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`📡 Chat endpoint: http://localhost:${PORT}/api/chat`);
   console.log(`🌐 CORS origin: ${process.env.VITE_DEV_URL || 'http://localhost:3000'}`);
   
-  // Check if API key is configured
-  if (!process.env.GEMINI_API_KEY) {
-    console.error('\n⚠️  WAARSCHUWING: GEMINI_API_KEY is niet ingesteld!');
+  // Check if API key is configured (check beide variabele namen)
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  if (!apiKey) {
+    console.error('\n⚠️  WAARSCHUWING: API key is niet ingesteld!');
     console.error('   De chat functionaliteit zal niet werken.');
-    console.error('   Voeg GEMINI_API_KEY toe aan .env.local of .env');
+    console.error('   Voeg GEMINI_API_KEY of GOOGLE_GENERATIVE_AI_API_KEY toe aan .env.local of .env');
     const envFile = existsSync(envLocalPath) ? '.env.local' : existsSync(envPath) ? '.env' : 'geen gevonden';
     console.error(`   Huidige .env bestand: ${envFile}`);
     console.error(`   Gecontroleerde paden:`);
     console.error(`   - ${envLocalPath}`);
     console.error(`   - ${envPath}\n`);
   } else {
-    const keyPreview = process.env.GEMINI_API_KEY.substring(0, 10) + '...';
-    console.log(`✅ GEMINI_API_KEY is geconfigureerd (${keyPreview})`);
+    const keyPreview = apiKey.substring(0, 10) + '...';
+    const keyName = process.env.GEMINI_API_KEY ? 'GEMINI_API_KEY' : 'GOOGLE_GENERATIVE_AI_API_KEY';
+    console.log(`✅ ${keyName} is geconfigureerd (${keyPreview})`);
   }
   
   console.log('\n💡 Test de backend met:');

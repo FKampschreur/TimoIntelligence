@@ -25,13 +25,17 @@ Voor de chatbot functionaliteit:
 VITE_CHAT_API_URL=http://localhost:3001/api/chat
 
 # Backend server configuratie (voor server/index.js) - VERPLICHT voor chatbot
+# Je kunt GEMINI_API_KEY gebruiken (aanbevolen) of GOOGLE_GENERATIVE_AI_API_KEY
 GEMINI_API_KEY=your_google_api_key_here
+# OF gebruik:
+# GOOGLE_GENERATIVE_AI_API_KEY=your_google_api_key_here
 PORT=3001
 VITE_DEV_URL=http://localhost:3000
 ```
 
 **BELANGRIJK:** 
-- De backend server gebruikt `GEMINI_API_KEY`
+- De backend server accepteert beide: `GEMINI_API_KEY` of `GOOGLE_GENERATIVE_AI_API_KEY`
+- `GEMINI_API_KEY` wordt automatisch gemapped naar `GOOGLE_GENERATIVE_AI_API_KEY` voor de Google SDK
 - Dit is een Express server, geen Next.js API route
 - De server code staat in `server/index.js`
 
@@ -54,9 +58,12 @@ VITE_DEV_URL=http://localhost:3000
 # VITE_CHAT_API_URL=http://localhost:3001/api/chat
 
 # Backend server configuratie (VERPLICHT voor chatbot)
+# Je kunt GEMINI_API_KEY gebruiken (aanbevolen) of GOOGLE_GENERATIVE_AI_API_KEY
 GEMINI_API_KEY=your_google_api_key_here
+# OF gebruik:
+# GOOGLE_GENERATIVE_AI_API_KEY=your_google_api_key_here
 PORT=3001
 VITE_DEV_URL=http://localhost:3000
 ```
 
-**Opmerking:** Voor lokale ontwikkeling is alleen `GEMINI_API_KEY` nodig voor de chatbot. De andere variabelen zijn optioneel.
+**Opmerking:** Voor lokale ontwikkeling is alleen `GEMINI_API_KEY` (of `GOOGLE_GENERATIVE_AI_API_KEY`) nodig voor de chatbot. De andere variabelen zijn optioneel. De server ondersteunt beide variabele namen.
