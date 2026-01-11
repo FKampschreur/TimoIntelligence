@@ -36,8 +36,32 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware - moet VOOR routes worden gezet
+// CORS configuratie: ondersteun zowel development als productie origins
+const allowedOrigins = [
+  process.env.VITE_DEV_URL || 'http://localhost:3000',
+  process.env.VITE_PRODUCTION_URL || 'https://www.timointelligence.nl',
+  'https://www.timointelligence.nl',
+  'http://localhost:3000'
+].filter(Boolean); // Verwijder undefined/null waarden
+
 app.use(cors({
-  origin: process.env.VITE_DEV_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (bijvoorbeeld mobile apps of Postman)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      // In development, allow localhost origins
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        callback(null, true);
+      } else {
+        console.warn(`⚠️  CORS blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -51,7 +75,7 @@ app.use((req, res, next) => {
 });
 
 // Log CORS configuratie
-console.log(`🌐 CORS configured for origin: ${process.env.VITE_DEV_URL || 'http://localhost:3000'}`);
+console.log(`🌐 CORS configured for origins: ${allowedOrigins.join(', ')}`);
 
 // System prompt voor Timo - Timo Intelligence
 const SYSTEM_PROMPT = `ROL EN IDENTITEIT

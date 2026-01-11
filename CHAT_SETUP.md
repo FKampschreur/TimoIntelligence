@@ -124,7 +124,32 @@ Zorg ervoor dat `VITE_DEV_URL` in `.env` overeenkomt met je frontend URL.
 ## Productie Deployment
 
 Voor productie:
+
+### Frontend (Vite Build)
+1. Stel `VITE_CHAT_API_URL` in als build-time environment variable:
+   ```env
+   VITE_CHAT_API_URL=https://www.timointelligence.nl:3001/api/chat
+   ```
+   Of als je een aparte API subdomain hebt:
+   ```env
+   VITE_CHAT_API_URL=https://api.timointelligence.nl/api/chat
+   ```
+
+2. Build de frontend:
+   ```bash
+   npm run build
+   ```
+
+### Backend Server
 1. Stel `GEMINI_API_KEY` in als environment variable op je hosting platform
-2. Update `VITE_DEV_URL` naar je productie frontend URL
-3. Zorg dat de backend server bereikbaar is vanaf je frontend domain
-4. Configureer CORS correct voor je productie domain
+2. Stel `VITE_PRODUCTION_URL` in voor CORS:
+   ```env
+   VITE_PRODUCTION_URL=https://www.timointelligence.nl
+   ```
+3. Zorg dat de backend server bereikbaar is op poort 3001 (of configureer een andere poort)
+4. De CORS configuratie staat nu automatisch zowel localhost als productie URLs toe
+
+### Belangrijk voor Productie
+- De backend server moet publiek bereikbaar zijn op dezelfde hostname of een subdomain
+- Als je een reverse proxy gebruikt (zoals nginx), zorg dat deze correct is geconfigureerd
+- De chat widget detecteert automatisch of het in productie draait en gebruikt de juiste API URL

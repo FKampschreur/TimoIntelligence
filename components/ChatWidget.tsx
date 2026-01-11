@@ -9,11 +9,30 @@ interface ChatWidgetProps {
 
 // Get API URL from environment or use default
 const getChatApiUrl = (): string => {
-  // Check for environment variable first
+  // Check for environment variable first (heeft altijd voorrang)
   if (import.meta.env.VITE_CHAT_API_URL) {
     return import.meta.env.VITE_CHAT_API_URL;
   }
-  // Fallback to localhost for development
+  
+  // Detect production environment
+  const isProduction = typeof window !== 'undefined' && 
+                      window.location.hostname !== 'localhost' && 
+                      !window.location.hostname.includes('127.0.0.1') &&
+                      window.location.protocol === 'https:';
+  
+  if (isProduction) {
+    // Production: gebruik dezelfde hostname maar met poort 3001
+    // Of gebruik een specifieke productie API URL als ingesteld
+    if (import.meta.env.VITE_PRODUCTION_API_URL) {
+      return import.meta.env.VITE_PRODUCTION_API_URL;
+    }
+    // Standaard: gebruik dezelfde hostname met poort 3001
+    // Voor productie: gebruik https://www.timointelligence.nl:3001/api/chat
+    const hostname = window.location.hostname;
+    return `https://${hostname}:3001/api/chat`;
+  }
+  
+  // Development: fallback to localhost
   return 'http://localhost:3001/api/chat';
 };
 

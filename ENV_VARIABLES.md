@@ -20,6 +20,7 @@ VITE_API_BASE_URL=http://localhost:3001/api
 
 Voor de chatbot functionaliteit:
 
+### Development (.env.local)
 ```env
 # Chat API endpoint (OPTIONEEL - gebruikt default localhost:3001 in development)
 VITE_CHAT_API_URL=http://localhost:3001/api/chat
@@ -31,6 +32,20 @@ GEMINI_API_KEY=your_google_api_key_here
 # GOOGLE_GENERATIVE_AI_API_KEY=your_google_api_key_here
 PORT=3001
 VITE_DEV_URL=http://localhost:3000
+```
+
+### Production (op je hosting platform)
+```env
+# Frontend environment variables (Vite build-time)
+VITE_CHAT_API_URL=https://www.timointelligence.nl:3001/api/chat
+# OF als je een aparte API subdomain hebt:
+# VITE_CHAT_API_URL=https://api.timointelligence.nl/api/chat
+
+# Backend server environment variables (runtime)
+GEMINI_API_KEY=your_google_api_key_here
+PORT=3001
+VITE_DEV_URL=http://localhost:3000
+VITE_PRODUCTION_URL=https://www.timointelligence.nl
 ```
 
 **BELANGRIJK:** 
