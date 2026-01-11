@@ -11,6 +11,7 @@ interface ChatWidgetProps {
 const getChatApiUrl = (): string => {
   // Check for environment variable first (heeft altijd voorrang)
   if (import.meta.env.VITE_CHAT_API_URL) {
+    console.log('🔗 Using VITE_CHAT_API_URL:', import.meta.env.VITE_CHAT_API_URL);
     return import.meta.env.VITE_CHAT_API_URL;
   }
   
@@ -24,16 +25,23 @@ const getChatApiUrl = (): string => {
     // Production: gebruik dezelfde hostname maar met poort 3001
     // Of gebruik een specifieke productie API URL als ingesteld
     if (import.meta.env.VITE_PRODUCTION_API_URL) {
+      console.log('🔗 Using VITE_PRODUCTION_API_URL:', import.meta.env.VITE_PRODUCTION_API_URL);
       return import.meta.env.VITE_PRODUCTION_API_URL;
     }
+    
     // Standaard: gebruik dezelfde hostname met poort 3001
     // Voor productie: gebruik https://www.timointelligence.nl:3001/api/chat
     const hostname = window.location.hostname;
-    return `https://${hostname}:3001/api/chat`;
+    const apiUrl = `https://${hostname}:3001/api/chat`;
+    console.log('🔗 Auto-detected production API URL:', apiUrl);
+    console.warn('⚠️  VITE_CHAT_API_URL is not set! Using auto-detected URL. Set VITE_CHAT_API_URL in your build environment for production.');
+    return apiUrl;
   }
   
   // Development: fallback to localhost
-  return 'http://localhost:3001/api/chat';
+  const devUrl = 'http://localhost:3001/api/chat';
+  console.log('🔗 Using development API URL:', devUrl);
+  return devUrl;
 };
 
 const ChatWidget: React.FC<ChatWidgetProps> = ({ 
@@ -41,6 +49,16 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 }) => {
   // Use provided apiUrl, or get from environment, or use default
   const chatApiUrl = apiUrl || getChatApiUrl();
+  
+  // Log the API URL being used (only once on mount)
+  useEffect(() => {
+    console.log('💬 ChatWidget initialized with API URL:', chatApiUrl);
+    console.log('🌐 Current location:', {
+      hostname: typeof window !== 'undefined' ? window.location.hostname : 'N/A',
+      protocol: typeof window !== 'undefined' ? window.location.protocol : 'N/A',
+      href: typeof window !== 'undefined' ? window.location.href : 'N/A'
+    });
+  }, []);
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -63,18 +81,41 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         cause: error.cause,
         ...error
       });
+      console.error('🔗 API URL being used:', chatApiUrl);
+      console.error('🌐 Current location:', typeof window !== 'undefined' ? window.location.href : 'N/A');
       
       // Show user-friendly error message
       const errorMessage = error.message || String(error);
-      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError') || errorMessage.includes('ERR_CONNECTION_REFUSED')) {
-        console.error('❌ Kan niet verbinden met chat server.');
-        console.error('   Oplossing: Start de backend server met: npm run server');
-        console.error('   Of start beide servers met: npm run dev:all');
+      
+      // Check for Vercel/404 errors
+      if (errorMessage.includes('NOT_FOUND') || errorMessage.includes('404') || errorMessage.includes('page could not be found')) {
+        console.error('❌ Backend server niet gevonden (404).');
+        console.error('   Dit betekent dat de backend server niet bereikbaar is op:', chatApiUrl);
+        console.error('   Oplossing voor productie:');
+        console.error('   1. Deploy de backend server (server/index.js) naar een hosting platform');
+        console.error('   2. Stel VITE_CHAT_API_URL in als environment variable in Vercel');
+        console.error('   3. Rebuild de frontend met: npm run build');
+        console.error('   Zie PRODUCTION_DEPLOYMENT.md voor instructies');
+      } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError') || errorMessage.includes('ERR_CONNECTION_REFUSED')) {
+        const isProduction = typeof window !== 'undefined' && 
+                            window.location.hostname !== 'localhost' && 
+                            !window.location.hostname.includes('127.0.0.1');
+        if (isProduction) {
+          console.error('❌ Kan niet verbinden met chat server in productie.');
+          console.error('   Controleer:');
+          console.error('   1. Draait de backend server op de productie URL?');
+          console.error('   2. Is VITE_CHAT_API_URL correct ingesteld in Vercel?');
+          console.error('   3. Is de backend server publiek bereikbaar?');
+        } else {
+          console.error('❌ Kan niet verbinden met chat server.');
+          console.error('   Oplossing: Start de backend server met: npm run server');
+          console.error('   Of start beide servers met: npm run dev:all');
+        }
       } else if (errorMessage.includes('API key') || errorMessage.includes('500')) {
         console.error('❌ API key probleem of server error.');
         console.error('   Controleer:');
-        console.error('   1. Is GEMINI_API_KEY ingesteld in .env.local?');
-        console.error('   2. Draait de backend server? (check terminal)');
+        console.error('   1. Is GEMINI_API_KEY ingesteld op de backend server?');
+        console.error('   2. Draait de backend server? (check terminal/logs)');
         console.error('   3. Run: npm run test:chat om te testen');
       } else {
         console.error('❌ Onbekende chat error.');
