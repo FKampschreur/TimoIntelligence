@@ -98,12 +98,22 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       // Check for Vercel/404 errors
       if (errorMessage.includes('NOT_FOUND') || errorMessage.includes('404') || errorMessage.includes('page could not be found')) {
         console.error('❌ Backend server niet gevonden (404).');
-        console.error('   Dit betekent dat de backend server niet bereikbaar is op:', chatApiUrl);
-        console.error('   Oplossing voor productie:');
-        console.error('   1. Deploy de backend server (server/index.js) naar een hosting platform');
-        console.error('   2. Stel VITE_CHAT_API_URL in als environment variable in Vercel');
-        console.error('   3. Rebuild de frontend met: npm run build');
-        console.error('   Zie PRODUCTION_DEPLOYMENT.md voor instructies');
+        console.error('   API URL:', chatApiUrl);
+        console.error('');
+        console.error('   Dit betekent dat de backend server niet bereikbaar is.');
+        console.error('');
+        console.error('   Oplossingen:');
+        console.error('');
+        console.error('   OPTIE 1: Reverse Proxy Setup (als je een eigen server hebt)');
+        console.error('   1. Zorg dat backend server draait op localhost:3001');
+        console.error('   2. Configureer nginx om /api/chat naar backend te proxen');
+        console.error('   3. Zie REVERSE_PROXY_SETUP.md voor nginx configuratie');
+        console.error('');
+        console.error('   OPTIE 2: Aparte Backend Server (Railway/Render/VPS)');
+        console.error('   1. Deploy backend naar Railway/Render/VPS');
+        console.error('   2. Stel VITE_CHAT_API_URL in Vercel → Settings → Environment Variables');
+        console.error('   3. Rebuild Vercel deployment');
+        console.error('   4. Zie VERCEL_DEPLOYMENT.md voor instructies');
       } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError') || errorMessage.includes('ERR_CONNECTION_REFUSED')) {
         const isProduction = typeof window !== 'undefined' && 
                             window.location.hostname !== 'localhost' && 
