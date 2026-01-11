@@ -22,19 +22,29 @@ const getChatApiUrl = (): string => {
                       window.location.protocol === 'https:';
   
   if (isProduction) {
-    // Production: gebruik dezelfde hostname maar met poort 3001
-    // Of gebruik een specifieke productie API URL als ingesteld
+    // Production: gebruik een specifieke productie API URL als ingesteld
     if (import.meta.env.VITE_PRODUCTION_API_URL) {
       console.log('🔗 Using VITE_PRODUCTION_API_URL:', import.meta.env.VITE_PRODUCTION_API_URL);
       return import.meta.env.VITE_PRODUCTION_API_URL;
     }
     
-    // Standaard: gebruik dezelfde hostname met poort 3001
-    // Voor productie: gebruik https://www.timointelligence.nl:3001/api/chat
+    // Als VITE_CHAT_API_URL niet is ingesteld, probeer eerst reverse proxy setup
+    // (als je een nginx reverse proxy hebt die /api/chat naar backend proxyt)
     const hostname = window.location.hostname;
-    const apiUrl = `https://${hostname}:3001/api/chat`;
+    const port = window.location.port;
+    
+    // Als er een reverse proxy is, gebruik /api/chat op dezelfde hostname
+    // Anders gebruik poort 3001 of een aparte backend URL
+    // BELANGRIJK: Stel altijd VITE_CHAT_API_URL in voor productie!
+    const apiUrl = port 
+      ? `https://${hostname}:${port}/api/chat`  // Als er een poort is, gebruik die
+      : `https://${hostname}/api/chat`;          // Anders probeer reverse proxy
+    
     console.log('🔗 Auto-detected production API URL:', apiUrl);
-    console.warn('⚠️  VITE_CHAT_API_URL is not set! Using auto-detected URL. Set VITE_CHAT_API_URL in your build environment for production.');
+    console.error('❌ VITE_CHAT_API_URL is not set in Vercel!');
+    console.error('   Dit kan werken als je een reverse proxy hebt die /api/chat naar je backend proxyt.');
+    console.error('   Anders: Stel VITE_CHAT_API_URL in in Vercel → Settings → Environment Variables');
+    console.error('   Bijvoorbeeld: VITE_CHAT_API_URL=https://your-backend.railway.app/api/chat');
     return apiUrl;
   }
   
