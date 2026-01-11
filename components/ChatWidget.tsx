@@ -28,21 +28,22 @@ const getChatApiUrl = (): string => {
       return import.meta.env.VITE_PRODUCTION_API_URL;
     }
     
-    // Als VITE_CHAT_API_URL niet is ingesteld, gebruik reverse proxy setup
-    // Dit werkt als je een nginx reverse proxy hebt die /api/chat naar backend proxyt
+    // Als VITE_CHAT_API_URL niet is ingesteld, gebruik Vercel Serverless Function
+    // Dit werkt automatisch op Vercel zonder aparte server!
     const hostname = window.location.hostname;
     const protocol = window.location.protocol;
     const port = window.location.port;
     
-    // Gebruik relatief pad of volledige URL op basis van setup
-    // Als er een poort is (bijv. :3000), gebruik die
-    // Anders gebruik reverse proxy op dezelfde hostname
-    const apiUrl = port 
-      ? `${protocol}//${hostname}:${port}/api/chat`  // Met poort
-      : `${protocol}//${hostname}/api/chat`;          // Reverse proxy (geen poort)
+    // Gebruik /api/chat op hetzelfde domain (Vercel Serverless Function)
+    // Of als er een poort is (development), gebruik localhost backend
+    const apiUrl = port && (hostname === 'localhost' || hostname === '127.0.0.1')
+      ? `${protocol}//${hostname}:${port}/api/chat`  // Development: localhost backend
+      : `${protocol}//${hostname}/api/chat`;          // Production: Vercel Serverless Function
     
-    console.log('🔗 Using reverse proxy API URL:', apiUrl);
-    console.log('ℹ️  Zorg dat je backend server draait en nginx correct is geconfigureerd.');
+    console.log('🔗 Using API URL:', apiUrl);
+    if (!port || hostname !== 'localhost') {
+      console.log('ℹ️  Using Vercel Serverless Function - no separate server needed!');
+    }
     return apiUrl;
   }
   
